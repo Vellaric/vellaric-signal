@@ -1,0 +1,2087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vellaric: Signal</title>
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-primary: #fafafa;
+            --bg-secondary: #ffffff;
+            --bg-hover: #f5f5f5;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --border-color: #e5e5e5;
+            --sidebar-width: 240px;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+        }
+        
+        body.dark-mode {
+            --bg-primary: #0f0f0f;
+            --bg-secondary: #1a1a1a;
+            --bg-hover: #252525;
+            --text-primary: #e5e5e5;
+            --text-secondary: #a3a3a3;
+            --text-tertiary: #737373;
+            --border-color: #2a2a2a;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+        
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 24px 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            padding: 0 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo {
+            width: 32px;
+            height: 32px;
+            background: var(--accent-blue);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .logo-text {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .nav-section {
+            margin-bottom: 24px;
+        }
+        
+        .nav-item {
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            font-size: 14px;
+            border-left: 3px solid transparent;
+        }
+        
+        .nav-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .nav-item.active {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-left-color: var(--accent-blue);
+            font-weight: 500;
+        }
+        
+        .nav-item .icon {
+            width: 20px;
+            text-align: center;
+        }
+        
+        .nav-item .badge {
+            margin-left: auto;
+            background: #f59e0b;
+            color: white;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .nav-group-title {
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .sidebar-footer {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 12px;
+        }
+        
+        .theme-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .theme-toggle:hover {
+            background: var(--bg-hover);
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 32px 40px;
+        }
+        
+        .header {
+            margin-bottom: 32px;
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .page-title {
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            background: var(--bg-hover);
+        }
+        
+        .btn-primary {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .search-bar input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        
+        /* Table */
+        .table-container {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background: var(--bg-primary);
+        }
+        
+        th {
+            text-align: left;
+            padding: 16px 20px;
+            font-weight: 500;
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        tbody tr {
+            border-top: 1px solid var(--border-color);
+            transition: background 0.2s;
+        }
+        
+        tbody tr:hover {
+            background: var(--bg-hover);
+        }
+        
+        td {
+            padding: 16px 20px;
+            font-size: 14px;
+        }
+        
+        .product-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .product-category {
+            font-size: 13px;
+            color: var(--text-tertiary);
+            margin-top: 4px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .status-badge.active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        body.dark-mode .status-badge.active {
+            background: #064e3b;
+            color: #6ee7b7;
+        }
+        
+        .status-badge.offline, .status-badge.failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        body.dark-mode .status-badge.offline, body.dark-mode .status-badge.failed {
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
+        
+        .status-badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        body.dark-mode .status-badge.pending {
+            background: #78350f;
+            color: #fcd34d;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        
+        .btn-icon:hover {
+            background: var(--bg-hover);
+        }
+        
+        .btn-icon.delete:hover {
+            background: var(--accent-red);
+            color: white;
+            border-color: var(--accent-red);
+        }
+        
+        .btn-icon:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Container stats styling */
+        .stats-value {
+            font-weight: 600;
+            color: var(--accent-blue);
+        }
+        
+        .stats-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-tertiary);
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="/LogoSignal.png" alt="Vellaric Signal" style="height: 40px; width: auto;">
+            </div>
+            
+            <nav>
+                <div class="nav-section">
+                    <div class="nav-group-title">Deployments</div>
+                    <div class="nav-item active" onclick="switchView('overview')" data-view="overview">
+                        <span class="icon"><img src="/chart-column-alt.png" style="width: 18px; height: 18px;"></span>
+                        <span>Overview</span>
+                    </div>
+                    <div class="nav-item" onclick="switchView('queue')" data-view="queue">
+                        <span class="icon"><img src="/hourglass.png" style="width: 18px; height: 18px;"></span>
+                        <span>Queue</span>
+                        <span class="badge" id="queue-badge">0</span>
+                    </div>
+                    <div class="nav-item" onclick="switchView('active')" data-view="active">
+                        <span class="icon"><img src="/bolt-a.png" style="width: 18px; height: 18px;"></span>
+                        <span>Active</span>
+                        <span class="badge" style="background: var(--accent-green)" id="active-badge">0</span>
+                    </div>
+                    <div class="nav-item" onclick="switchView('history')" data-view="history">
+                        <span class="icon"><img src="/calendar-alt.png" style="width: 18px; height: 18px;"></span>
+                        <span>History</span>
+                        <span class="badge" style="background: var(--accent-blue)" id="history-badge">0</span>
+                    </div>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-group-title">Monitoring</div>
+                    <div class="nav-item" onclick="switchView('containers')" data-view="containers">
+                        <span class="icon"><img src="/drag-horizontal.png" style="width: 18px; height: 18px;"></span>
+                        <span>Containers</span>
+                    </div>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-group-title">Database</div>
+                    <div class="nav-item" onclick="switchView('databases')" data-view="databases">
+                        <span class="icon"><img src="/hard-drive-internal.png" style="width: 18px; height: 18px;"></span>
+                        <span>Databases</span>
+                    </div>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-group-title">Backups</div>
+                    <div class="nav-item" onclick="switchView('backups')" data-view="backups">
+                        <span class="icon"><img src="/cloud-clock.png" style="width: 18px; height: 18px;"></span>
+                        <span>Database Backups</span>
+                    </div>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <span id="theme-icon"><img src="/moon.png" style="width: 20px; height: 20px;"></span>
+                </button>
+                <button class="theme-toggle" onclick="logout()" title="Logout">
+                    <span><img src="/logout-bracket.png" style="width: 20px; height: 20px;"></span>
+                </button>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="header">
+                <div class="header-top">
+                    <h1 class="page-title">Deployments Overview</h1>
+                    <div class="header-actions">
+                        <button class="btn" onclick="loadAll()">
+                            Refresh
+                        </button>
+                        <button class="btn btn-primary" onclick="runCleanup()">
+                            Cleanup
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div class="search-bar">
+                        <span>🔍</span>
+                        <input type="text" placeholder="Search deployments" id="search-input" onkeyup="filterTable()">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Deployment</th>
+                            <th>Status</th>
+                            <th>Domain</th>
+                            <th>Branch</th>
+                            <th>Updated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="deployments-table">
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">📦</div>
+                                    <p>Loading deployments...</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const API_BASE = '';
+        let currentView = 'overview';
+        let allData = { active: [], queue: [], history: [] };
+        let currentLogsDeploymentId = null; // Track which deployment logs are being viewed
+        
+        // Initialize Socket.IO
+        const socket = io();
+        
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+        
+        socket.on('deployment:status', (data) => {
+            console.log('Deployment update:', data);
+            
+            // Update the deployment in allData
+            updateDeploymentInData(data);
+            
+            // Re-render the current view
+            renderCurrentView();
+            
+            // If logs modal is open for this deployment, refresh logs
+            if (currentLogsDeploymentId === data.id) {
+                refreshLogs(data.id);
+            }
+        });
+        
+        socket.on('deployment:log', (data) => {
+            // If logs modal is open for this deployment, append the new log
+            if (currentLogsDeploymentId === data.deploymentId) {
+                const logsContent = document.getElementById('logs-modal-content');
+                if (logsContent) {
+                    const logLine = `${data.log.timestamp.substring(11, 19)} [${data.log.level}] ${data.log.message}`;
+                    if (logsContent.textContent === 'No logs available.' || logsContent.textContent === 'Loading logs...') {
+                        logsContent.textContent = logLine;
+                    } else {
+                        logsContent.textContent += '\n' + logLine;
+                    }
+                    // Auto-scroll to bottom
+                    logsContent.scrollTop = logsContent.scrollHeight;
+                }
+            }
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+        });
+        
+        function updateDeploymentInData(update) {
+            // Update in active deployments
+            const activeIdx = allData.active.findIndex(d => d.id === update.id);
+            if (activeIdx !== -1) {
+                allData.active[activeIdx] = { ...allData.active[activeIdx], ...update, updated_at: new Date().toISOString() };
+            }
+            
+            // Update in queue
+            const queueIdx = allData.queue.findIndex(d => d.id === update.id);
+            if (queueIdx !== -1) {
+                allData.queue[queueIdx] = { ...allData.queue[queueIdx], ...update, updated_at: new Date().toISOString() };
+            }
+            
+            // Update in history
+            const historyIdx = allData.history.findIndex(d => d.id === update.id);
+            if (historyIdx !== -1) {
+                allData.history[historyIdx] = { ...allData.history[historyIdx], ...update, updated_at: new Date().toISOString() };
+            }
+            
+            // If deployment just finished, refresh all data to get updated lists
+            if (update.status === 'success' || update.status === 'failed') {
+                setTimeout(() => loadAll(), 1000);
+            }
+        }
+        
+        function refreshLogs(deploymentId) {
+            const logsContent = document.getElementById('logs-modal-content');
+            if (!logsContent) return;
+            
+            fetch(`${API_BASE}/api/deployments/${deploymentId}/logs`)
+                .then(r => r.json())
+                .then(data => {
+                    const logs = (data.logs || []).map(log => 
+                        `${log.timestamp ? log.timestamp.substring(11, 19) : ''} [${log.level || 'info'}] ${log.message}`
+                    ).join('\n');
+                    logsContent.textContent = logs || 'No logs available.';
+                    // Auto-scroll to bottom
+                    logsContent.scrollTop = logsContent.scrollHeight;
+                })
+                .catch(() => {
+                    logsContent.textContent = 'Failed to load logs.';
+                });
+        }
+        
+        // Theme management
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            document.getElementById('theme-icon').innerHTML = isDark ? '<img src="/sun.png" style="width: 20px; height: 20px;">' : '<img src="/moon.png" style="width: 20px; height: 20px;">';
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+        
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('theme-icon').innerHTML = '<img src="/sun.png" style="width: 20px; height: 20px;">';
+        }
+        
+        // Check auth
+        async function checkAuth() {
+            try {
+                const res = await fetch(`${API_BASE}/api/auth/check`);
+                const data = await res.json();
+                if (!data.authenticated) {
+                    window.location.href = '/login.html';
+                }
+            } catch (err) {
+                console.error('Auth check failed:', err);
+            }
+        }
+        
+        async function logout() {
+            try {
+                await fetch(`${API_BASE}/api/logout`, { method: 'POST' });
+                window.location.href = '/login.html';
+            } catch (err) {
+                alert('Logout failed: ' + err.message);
+            }
+        }
+        
+        // View switching
+        function switchView(view) {
+            currentView = view;
+            
+            // Update active nav item
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('data-view') === view) {
+                    item.classList.add('active');
+                }
+            });
+            
+            // Clean up view-specific controls
+            const backupControls = document.getElementById('backup-controls');
+            const databaseControls = document.getElementById('database-controls');
+            if (backupControls) backupControls.remove();
+            if (databaseControls) databaseControls.remove();
+            
+            // Update page title
+            const titles = {
+                'overview': 'Deployments Overview',
+                'queue': 'Deployment Queue',
+                'active': 'Active Deployments',
+                'logs': 'Deployment Logs',
+                'history': 'Deployment History',
+                'dashboard': 'Dashboard',
+                'containers': 'Container Monitoring',
+                'databases': 'Database Management',
+                'backups': 'Database Backups'
+            };
+            document.querySelector('.page-title').textContent = titles[view] || 'Deployments';
+            
+            renderCurrentView();
+        }
+        
+        function formatUptime(createdAt) {
+            const now = new Date();
+            const created = new Date(createdAt);
+            const diff = Math.floor((now - created) / 1000);
+            
+            if (diff < 60) return `${diff}s ago`;
+            if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+            return `${Math.floor(diff / 86400)}d ago`;
+        }
+        
+        async function loadAll() {
+            try {
+                const [activeRes, historyRes, queueRes] = await Promise.all([
+                    fetch(`${API_BASE}/api/deployments/active`),
+                    fetch(`${API_BASE}/api/deployments?limit=50`),
+                    fetch(`${API_BASE}/api/queue`)
+                ]);
+                
+                const activeData = await activeRes.json();
+                const historyData = await historyRes.json();
+                const queueData = await queueRes.json();
+                
+                // Store all data
+                allData = {
+                    active: activeData.deployments.map(d => ({...d, status: 'active', type: 'active'})),
+                    queue: queueData.queue.map(q => ({
+                        id: q.id,
+                        project_name: q.projectName,
+                        branch: q.branch,
+                        domain: 'Pending...',
+                        status: 'pending',
+                        type: 'queue',
+                        created_at: q.queuedAt,
+                        repoUrl: q.repoUrl,
+                        commit: q.commit
+                    })),
+                    history: historyData.deployments.map(d => ({...d, type: 'history'}))
+                };
+                
+                // Update badges
+                document.getElementById('queue-badge').textContent = allData.queue.length;
+                document.getElementById('active-badge').textContent = allData.active.length;
+                document.getElementById('history-badge').textContent = allData.history.length;
+                
+                renderCurrentView();
+            } catch (err) {
+                console.error('Error loading data:', err);
+                document.getElementById('deployments-table').innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">❌</div>
+                                <p>Error loading deployments</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        function renderCurrentView() {
+            let deployments = [];
+            
+            switch(currentView) {
+                case 'overview':
+                    deployments = [
+                        ...allData.active,
+                        ...allData.queue,
+                        ...allData.history.filter(d => d.status === 'failed').slice(0, 5)
+                    ];
+                    break;
+                case 'queue':
+                    deployments = allData.queue;
+                    break;
+                case 'active':
+                    deployments = allData.active;
+                    break;
+                case 'history':
+                    deployments = allData.history;
+                    break;
+                case 'logs':
+                    renderLogsView();
+                    return;
+                case 'containers':
+                    renderContainersView();
+                    return;
+                case 'databases':
+                    renderDatabasesView();
+                    return;
+                case 'backups':
+                    renderBackupsView();
+                    return;
+            }
+            
+            renderDeployments(deployments);
+        }
+        
+        function renderLogsView() {
+            // Update table headers for logs view
+            const thead = document.querySelector('thead tr');
+            thead.innerHTML = `
+                <th>Deployment</th>
+                <th>Status</th>
+                <th>Branch</th>
+                <th>Timestamp</th>
+                <th>Logs</th>
+            `;
+            
+            const tbody = document.getElementById('deployments-table');
+            
+            // Get all deployments with logs (history and queue)
+            const deploymentsWithLogs = [
+                ...allData.queue,
+                ...allData.history
+            ].filter(d => d.id); // Only show deployments that have an ID (and thus logs)
+            
+            if (deploymentsWithLogs.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📝</div>
+                                <p>No deployment logs available</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = deploymentsWithLogs.map(d => {
+                // Status badge
+                let badgeClass = 'offline', badgeText = 'Unknown';
+                if (d.status === 'success' || d.status === 'deployed') { badgeClass = 'active'; badgeText = 'Success'; }
+                else if (d.status === 'pending' || d.status === 'queued') { badgeClass = 'pending'; badgeText = 'Queued'; }
+                else if (d.status === 'building' || d.status === 'in-progress') { badgeClass = 'pending'; badgeText = 'Building'; }
+                else if (d.status === 'failed') { badgeClass = 'failed'; badgeText = 'Failed'; }
+                
+                const timestamp = d.created_at ? formatUptime(d.created_at) : '-';
+                
+                return `
+                    <tr>
+                        <td>
+                            <div class="product-name">${d.project_name}</div>
+                            <div class="product-category">${d.commit ? d.commit.substring(0, 8) : 'N/A'}</div>
+                        </td>
+                        <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
+                        <td>${d.branch || 'main'}</td>
+                        <td>${timestamp}</td>
+                        <td>
+                            <button class="btn-icon" onclick="showLogsModal('${d.id}')" title="View Build Logs"><img src="/file-list.png" style="width: 16px; height: 16px;"></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function renderDeployments(deployments) {
+            // Reset table headers for deployment view
+            const thead = document.querySelector('thead tr');
+            thead.innerHTML = `
+                <th>Deployment</th>
+                <th>Status</th>
+                <th>Domain</th>
+                <th>Branch</th>
+                <th>Updated</th>
+                <th>Actions</th>
+            `;
+            
+            const tbody = document.getElementById('deployments-table');
+            if (deployments.length === 0) {
+                const emptyMessages = {
+                    'overview': 'No deployments yet',
+                    'queue': 'Queue is empty',
+                    'active': 'No active deployments',
+                    'history': 'No deployment history'
+                };
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📦</div>
+                                <p>${emptyMessages[currentView] || 'No deployments yet'}</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            tbody.innerHTML = deployments.map(d => {
+                // Status logic
+                let status = d.status;
+                if (d.type === 'queue') {
+                    if (d.status === 'building' || d.status === 'in-progress') status = 'building';
+                    else if (d.status === 'failed') status = 'failed';
+                    else if (d.status === 'success' || d.status === 'deployed') status = 'success';
+                    else status = 'queued';
+                }
+                const isActive = status === 'active' || status === 'deployed' || status === 'success';
+                const isPending = status === 'pending' || status === 'queued';
+                const isBuilding = status === 'building' || status === 'in-progress';
+                const isFailed = status === 'failed';
+                const uptime = d.created_at ? formatUptime(d.created_at) : '-';
+                const domainDisplay = d.domain && d.domain !== 'Pending...'
+                    ? `<a href="https://${d.domain}" target="_blank" style="color: var(--accent-blue)">${d.domain}</a>`
+                    : d.domain || '-';
+                // Action buttons
+                let actionButtons = '';
+                if (d.type === 'active' || isActive) {
+                    actionButtons = `
+                        <div class="action-buttons">
+                            <button class="btn-icon" onclick="window.open('https://${d.domain}', '_blank')" title="Open Site"><img src="/arrow-up-right-small.png" style="width: 16px; height: 16px;"></button>
+                            <button class="btn-icon delete" onclick="deleteDeployment('${d.project_name}', '${d.branch}')" title="Delete"><img src="/trash-xmark.png" style="width: 16px; height: 16px;"></button>
+                        </div>
+                    `;
+                } else if (d.type === 'queue' || isPending || isBuilding || isFailed) {
+                    actionButtons = `
+                        <div class="action-buttons">
+                            <button class="btn-icon" onclick="showLogsModal('${d.id || d.deployment_id || ''}')" title="View Logs"><img src="/file-list.png" style="width: 16px; height: 16px;"></button>
+                        </div>
+                    `;
+                } else {
+                    actionButtons = `<span style="color: var(--text-tertiary)">-</span>`;
+                }
+                // Status badge
+                let badgeClass = 'offline', badgeText = 'Offline';
+                if (isActive) { badgeClass = 'active'; badgeText = 'Success'; }
+                else if (isPending) { badgeClass = 'pending'; badgeText = 'Queued'; }
+                else if (isBuilding) { badgeClass = 'pending'; badgeText = 'Building'; }
+                else if (isFailed) { badgeClass = 'failed'; badgeText = 'Failed'; }
+                return `
+                    <tr data-name="${d.project_name.toLowerCase()}">
+                        <td>
+                            <div class="product-name">${d.project_name}</div>
+                            <div class="product-category">${d.commit ? d.commit.substring(0, 8) : 'N/A'}</div>
+                        </td>
+                        <td>
+                            <span class="status-badge ${badgeClass}">${badgeText}</span>
+                        </td>
+                        <td>${domainDisplay}</td>
+                        <td>${d.branch || 'main'}</td>
+                        <td>${uptime}</td>
+                        <td>${actionButtons}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Logs modal
+        function showLogsModal(deploymentId) {
+            if (!deploymentId) return alert('No deployment ID');
+            currentLogsDeploymentId = deploymentId; // Track which logs are being viewed
+            
+            let modal = document.getElementById('logs-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'logs-modal';
+                modal.style.position = 'fixed';
+                modal.style.top = '0';
+                modal.style.left = '0';
+                modal.style.width = '100vw';
+                modal.style.height = '100vh';
+                modal.style.background = 'rgba(0,0,0,0.5)';
+                modal.style.display = 'flex';
+                modal.style.alignItems = 'center';
+                modal.style.justifyContent = 'center';
+                modal.style.zIndex = '9999';
+                modal.innerHTML = `
+                    <div style="background: var(--bg-secondary); color: var(--text-primary); border-radius: 10px; max-width: 700px; width: 90vw; max-height: 80vh; overflow: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); padding: 24px; position: relative;">
+                        <button onclick="closeLogsModal()" style="position:absolute;top:10px;right:10px;font-size:20px;background:none;border:none;cursor:pointer;">✖️</button>
+                        <h2 style="margin-bottom:16px;">Deployment Logs</h2>
+                        <pre id="logs-modal-content" style="background: #111827; color: #f3f4f6; border-radius: 6px; padding: 16px; font-size: 13px; max-height: 60vh; overflow: auto;">Loading logs...</pre>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            refreshLogs(deploymentId);
+        }
+        
+        function closeLogsModal() {
+            currentLogsDeploymentId = null; // Stop tracking logs
+            const modal = document.getElementById('logs-modal');
+            if (modal) modal.remove();
+        }
+        
+        async function deleteDeployment(project, branch) {
+            if (!confirm(`Delete ${project} (${branch})?\n\nThis will:\n- Stop the container\n- Remove nginx config\n- Delete SSL certificate`)) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/deployments/${project}/${branch}`, {
+                    method: 'DELETE'
+                });
+                
+                if (res.ok) {
+                    alert('✅ Deployment deleted successfully');
+                    await loadAll();
+                } else {
+                    const data = await res.json();
+                    alert('❌ Error: ' + (data.error || 'Failed to delete'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+        
+        // Container monitoring functions
+        async function renderContainersView() {
+            const tbody = document.getElementById('deployments-table');
+            
+            // Add a debug section to show all Docker containers
+            console.log('Loading container stats...');
+            
+            // First, let's fetch all running containers to debug naming
+            try {
+                const debugRes = await fetch(`${API_BASE}/api/containers`);
+                const debugData = await debugRes.json();
+                console.log('All running containers:', debugData.containers);
+            } catch (err) {
+                console.error('Error fetching container list:', err);
+            }
+            
+            if (allData.active.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">🐋</div>
+                                <p>No active containers</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            // Update table headers for container view
+            const thead = document.querySelector('thead tr');
+            thead.innerHTML = `
+                <th>Container</th>
+                <th>CPU</th>
+                <th>Memory</th>
+                <th>Disk Size</th>
+                <th>Controls</th>
+                <th>Logs</th>
+            `;
+            
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">⏳</div>
+                            <p>Loading container stats...</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            // Load stats for each active container
+            const containerRows = await Promise.all(allData.active.map(async (d) => {
+                try {
+                    // Use container_name from DB, or construct it: projectname-branch
+                    const containerName = d.container_name || `${d.project_name.replace(/\s+/g, '-').toLowerCase()}-${d.branch || 'main'}`;
+                    const res = await fetch(`${API_BASE}/api/containers/${containerName}/stats`);
+                    
+                    if (!res.ok) {
+                        throw new Error(`Failed to fetch stats: ${res.status}`);
+                    }
+                    
+                    const stats = await res.json();
+                    
+                    return `
+                        <tr>
+                            <td>
+                                <div class="product-name">${d.project_name}</div>
+                                <div class="product-category">${containerName}</div>
+                            </td>
+                            <td><strong>${stats.cpu || 'N/A'}</strong></td>
+                            <td><strong>${stats.memory || 'N/A'}</strong></td>
+                            <td><strong>${stats.diskSize || 'N/A'}</strong></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" onclick="stopContainer('${containerName}')" title="Stop"><img src="/pause.png" style="width: 16px; height: 16px;"></button>
+                                    <button class="btn-icon" onclick="startContainer('${containerName}')" title="Start"><img src="/play.png" style="width: 16px; height: 16px;"></button>
+                                    <button class="btn-icon" onclick="restartContainer('${containerName}')" title="Restart"><img src="/repeat.png" style="width: 16px; height: 16px;"></button>
+                                </div>
+                            </td>
+                            <td>
+                                <button class="btn-icon" onclick="showContainerLogs('${containerName}')" title="View Logs"><img src="/file-list.png" style="width: 16px; height: 16px;"></button>
+                            </td>
+                        </tr>
+                    `;
+                } catch (err) {
+                    const containerName = d.container_name || `${d.project_name.replace(/\s+/g, '-').toLowerCase()}-${d.branch || 'main'}`;
+                    console.error(`Error loading stats for ${d.project_name}:`, err);
+                    return `
+                        <tr>
+                            <td>
+                                <div class="product-name">${d.project_name}</div>
+                                <div class="product-category">${containerName}</div>
+                            </td>
+                            <td colspan="5" style="color: var(--accent-red);">Error: ${err.message}</td>
+                        </tr>
+                    `;
+                }
+            }));
+            
+            tbody.innerHTML = containerRows.join('');
+        }
+        
+        async function stopContainer(containerName) {
+            if (!confirm(`Stop container ${containerName}?`)) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/containers/${containerName}/stop`, {
+                    method: 'POST'
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    alert('✅ ' + data.message);
+                    if (currentView === 'containers') renderContainersView();
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Failed to stop container'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+        
+        async function startContainer(containerName) {
+            try {
+                const res = await fetch(`${API_BASE}/api/containers/${containerName}/start`, {
+                    method: 'POST'
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    alert('✅ ' + data.message);
+                    if (currentView === 'containers') renderContainersView();
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Failed to start container'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+        
+        async function restartContainer(containerName) {
+            if (!confirm(`Restart container ${containerName}?`)) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/containers/${containerName}/restart`, {
+                    method: 'POST'
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    alert('✅ ' + data.message);
+                    if (currentView === 'containers') renderContainersView();
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Failed to restart container'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+        
+        function showContainerLogs(containerName) {
+            // Create modal for live logs
+            let modal = document.getElementById('container-logs-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'container-logs-modal';
+                modal.style.position = 'fixed';
+                modal.style.top = '0';
+                modal.style.left = '0';
+                modal.style.width = '100vw';
+                modal.style.height = '100vh';
+                modal.style.background = 'rgba(0,0,0,0.5)';
+                modal.style.display = 'flex';
+                modal.style.alignItems = 'center';
+                modal.style.justifyContent = 'center';
+                modal.style.zIndex = '9999';
+                modal.innerHTML = `
+                    <div style="background: var(--bg-secondary); color: var(--text-primary); border-radius: 10px; max-width: 900px; width: 90vw; max-height: 80vh; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.2); padding: 24px; position: relative; display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h2 id="logs-modal-title">Container Logs: ${containerName}</h2>
+                            <button onclick="closeContainerLogsModal()" style="font-size:20px;background:none;border:none;cursor:pointer;color:var(--text-primary);">✖️</button>
+                        </div>
+                        <pre id="container-logs-content" style="background: #111827; color: #f3f4f6; border-radius: 6px; padding: 16px; font-size: 13px; flex: 1; overflow: auto; font-family: 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word;">Loading logs...</pre>
+                        <div style="margin-top: 12px; display: flex; gap: 8px;">
+                            <button class="btn" onclick="clearContainerLogs()">Clear</button>
+                            <button class="btn btn-primary" onclick="refreshContainerLogs('${containerName}')">Refresh</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            } else {
+                modal.style.display = 'flex';
+                modal.querySelector('#logs-modal-title').textContent = `Container Logs: ${containerName}`;
+                const buttons = modal.querySelectorAll('.btn-primary');
+                buttons.forEach(btn => {
+                    btn.onclick = () => refreshContainerLogs(containerName);
+                });
+            }
+            
+            // Fetch logs (non-streaming for reliability)
+            fetchContainerLogs(containerName);
+        }
+        
+        function closeContainerLogsModal() {
+            const modal = document.getElementById('container-logs-modal');
+            if (modal) modal.style.display = 'none';
+        }
+        
+        function clearContainerLogs() {
+            const content = document.getElementById('container-logs-content');
+            if (content) content.textContent = '';
+        }
+        
+        async function fetchContainerLogs(containerName) {
+            const content = document.getElementById('container-logs-content');
+            if (!content) return;
+            
+            content.textContent = 'Fetching logs...\n';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/containers/${containerName}/logs?tail=200&follow=false`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    content.textContent = `Error: ${response.status} - ${errorText}`;
+                    return;
+                }
+                
+                const text = await response.text();
+                content.textContent = text || 'No logs available';
+                
+                // Auto-scroll to bottom
+                content.scrollTop = content.scrollHeight;
+                
+            } catch (err) {
+                console.error('Fetch logs error:', err);
+                content.textContent = 'Error fetching logs: ' + err.message;
+            }
+        }
+        
+        async function streamContainerLogs(containerName) {
+            const content = document.getElementById('container-logs-content');
+            if (!content) return;
+            
+            content.textContent = 'Connecting to log stream...\n';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/containers/${containerName}/logs?tail=100`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    content.textContent = `Error: ${response.status} - ${errorText}`;
+                    return;
+                }
+                
+                if (!response.body) {
+                    content.textContent = 'Error: No response body';
+                    return;
+                }
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                content.textContent = '';
+                let buffer = '';
+                
+                const processStream = async () => {
+                    try {
+                        while (true) {
+                            const { value, done } = await reader.read();
+                            
+                            if (done) {
+                                if (buffer) {
+                                    content.textContent += buffer;
+                                }
+                                if (content.textContent === '') {
+                                    content.textContent = 'No logs available or container is not running.';
+                                }
+                                break;
+            fetch          }
+                            
+                            const chunk = decoder.decode(value, { stream: true });
+                            buffer += chunk;
+                            
+                            // Update content
+                            content.textContent += chunk;
+                            
+                            // Auto-scroll to bottom
+                            content.scrollTop = content.scrollHeight;
+                        }
+                    } catch (readErr) {
+                        console.error('Stream read error:', readErr);
+                        content.textContent += `\n\nStream interrupted: ${readErr.message}`;
+                    }
+                };
+                
+                await processStream();
+                
+            } catch (err) {
+                console.error('Streaming error:', err);
+                content.textContent = 'Error streaming logs: ' + err.message;
+            }
+        }
+        
+        function refreshContainerLogs(containerName) {
+            clearContainerLogs();
+            streamContainerLogs(containerName);
+        }
+        
+        function filterTable() {
+            const input = document.getElementById('search-input').value.toLowerCase();
+            const rows = document.querySelectorAll('#deployments-table tr');
+            
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name');
+                if (name) {
+                    row.style.display = name.includes(input) ? '' : 'none';
+                }
+            });
+        }
+        
+        async function runCleanup() {
+            if (!confirm('Remove unused Docker images?')) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/cleanup`, {
+                    method: 'POST'
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    alert('✅ Cleanup completed successfully!');
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Cleanup failed'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+        
+        // Database management functions
+        async function renderDatabasesView() {
+            const thead = document.querySelector('thead tr');
+            thead.innerHTML = `
+                <th>Name</th>
+                <th>Environment</th>
+                <th>Connection</th>
+                <th>Status</th>
+                <th>Stats</th>
+                <th>Actions</th>
+            `;
+            
+            const tbody = document.getElementById('deployments-table');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">⏳</div>
+                            <p>Loading databases...</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            // Add create database button
+            const headerActions = document.querySelector('.header-actions');
+            if (headerActions && !document.getElementById('database-controls')) {
+                const dbControls = document.createElement('div');
+                dbControls.id = 'database-controls';
+                dbControls.style.display = 'flex';
+                dbControls.style.gap = '12px';
+                dbControls.innerHTML = `
+                    <button class="btn btn-primary" onclick="showCreateDatabaseModal()">
+                        <span>+ Create Database</span>
+                    </button>
+                `;
+                headerActions.prepend(dbControls);
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/databases`);
+                const data = await response.json();
+                
+                if (!data.databases || data.databases.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">💾</div>
+                                    <p>No databases created yet</p>
+                                    <button class="btn btn-primary" onclick="showCreateDatabaseModal()" style="margin-top: 16px;">
+                                        Create Your First Database
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                // Fetch stats for all databases
+                const databasesWithStats = await Promise.all(
+                    data.databases.map(async (db) => {
+                        try {
+                            const statsRes = await fetch(`${API_BASE}/api/databases/${db.id}/stats`);
+                            const stats = await statsRes.json();
+                            return { ...db, stats };
+                        } catch (err) {
+                            return { ...db, stats: { status: 'error' } };
+                        }
+                    })
+                );
+                
+                tbody.innerHTML = databasesWithStats.map(db => `
+                    <tr>
+                        <td>
+                            <div class="product-name">${db.name}</div>
+                            <div class="product-category">${db.container_name}</div>
+                        </td>
+                        <td>
+                            <span class="status-badge" style="background: ${db.environment === 'production' ? 'var(--accent-green)' : 'var(--accent-blue)'}; color: white;">
+                                ${db.environment}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn" onclick="showConnectionInfo('${db.id}')" style="font-size: 12px; padding: 6px 12px;">
+                                View Connection
+                            </button>
+                        </td>
+                        <td>
+                            <span class="status-badge ${db.stats.status === 'running' ? 'active' : 'inactive'}">
+                                ${db.stats.status || 'unknown'}
+                            </span>
+                        </td>
+                        <td style="font-size: 13px; color: var(--text-secondary);">
+                            ${db.stats.status === 'running' ? `
+                                <div>💾 ${db.stats.size}</div>
+                                <div>🔌 ${db.stats.connections} connections</div>
+                                <div>⏱️ ${db.stats.uptime}</div>
+                            ` : 'N/A'}
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                ${db.stats.status === 'running' ? `
+                                    <button class="btn" onclick="controlDatabase('${db.id}', 'stop')" title="Stop">
+                                        <img src="/pause.png" style="width: 16px; height: 16px;">
+                                    </button>
+                                    <button class="btn" onclick="controlDatabase('${db.id}', 'restart')" title="Restart">
+                                        <img src="/repeat.png" style="width: 16px; height: 16px;">
+                                    </button>
+                                ` : `
+                                    <button class="btn" onclick="controlDatabase('${db.id}', 'start')" title="Start">
+                                        <img src="/play.png" style="width: 16px; height: 16px;">
+                                    </button>
+                                `}
+                                <button class="btn" onclick="deleteDatabase('${db.id}', '${db.name}')" style="color: var(--accent-red);" title="Delete">
+                                    <img src="/trash-xmark.png" style="width: 16px; height: 16px;">
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading databases:', error);
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">❌</div>
+                                <p>Error loading databases: ${error.message}</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        function showCreateDatabaseModal() {
+            const modal = document.createElement('div');
+            modal.id = 'create-database-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="
+                    background: var(--bg-secondary);
+                    border-radius: 12px;
+                    padding: 32px;
+                    width: 90%;
+                    max-width: 500px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                ">
+                    <h2 style="margin-bottom: 24px; font-size: 24px;">Create Database</h2>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Database Name</label>
+                        <input 
+                            type="text" 
+                            id="db-name" 
+                            placeholder="my-database"
+                            style="
+                                width: 100%;
+                                padding: 12px;
+                                border: 1px solid var(--border-color);
+                                border-radius: 8px;
+                                background: var(--bg-primary);
+                                color: var(--text-primary);
+                                font-size: 14px;
+                            "
+                        >
+                        <div style="font-size: 12px; color: var(--text-tertiary); margin-top: 8px;">
+                            Lowercase letters, numbers, and hyphens only
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Environment</label>
+                        <select 
+                            id="db-environment"
+                            style="
+                                width: 100%;
+                                padding: 12px;
+                                border: 1px solid var(--border-color);
+                                border-radius: 8px;
+                                background: var(--bg-primary);
+                                color: var(--text-primary);
+                                font-size: 14px;
+                            "
+                        >
+                            <option value="production">Production</option>
+                            <option value="staging">Staging</option>
+                            <option value="development">Development</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                        <button 
+                            class="btn" 
+                            onclick="this.closest('div').parentElement.parentElement.remove()"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            id="create-db-btn"
+                            class="btn btn-primary" 
+                            onclick="createDatabase()"
+                        >
+                            Create Database
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            document.getElementById('db-name').focus();
+        }
+        
+        async function createDatabase() {
+            const nameInput = document.getElementById('db-name');
+            const envSelect = document.getElementById('db-environment');
+            const name = nameInput.value.trim();
+            const environment = envSelect.value;
+            
+            if (!name) {
+                alert('Please enter a database name');
+                return;
+            }
+            
+            if (!/^[a-z0-9-]+$/.test(name)) {
+                alert('Database name must contain only lowercase letters, numbers, and hyphens');
+                return;
+            }
+            
+            // Get the modal and create button
+            const createModal = document.getElementById('create-database-modal');
+            const createButton = document.getElementById('create-db-btn');
+            
+            if (!createButton) {
+                console.error('Create button not found');
+                return;
+            }
+            
+            const originalButtonText = createButton.innerHTML;
+            
+            // Disable button and show loading
+            createButton.disabled = true;
+            createButton.innerHTML = `
+                <span style="display: flex; align-items: center; gap: 8px;">
+                    <span style="
+                        width: 14px;
+                        height: 14px;
+                        border: 2px solid white;
+                        border-top-color: transparent;
+                        border-radius: 50%;
+                        animation: spin 0.8s linear infinite;
+                    "></span>
+                    Creating...
+                </span>
+            `;
+            
+            // Add loading message to modal
+            let statusDiv = document.getElementById('db-creation-status');
+            if (!statusDiv && createModal) {
+                const modalContent = createModal.querySelector('div');
+                if (modalContent) {
+                    statusDiv = document.createElement('div');
+                    statusDiv.id = 'db-creation-status';
+                    statusDiv.style.cssText = `
+                        margin-top: 16px;
+                        padding: 12px;
+                        background: var(--bg-primary);
+                        border-radius: 8px;
+                        font-size: 13px;
+                        color: var(--text-secondary);
+                    `;
+                    modalContent.insertBefore(statusDiv, modalContent.lastElementChild);
+                }
+            }
+            
+            try {
+                statusDiv.innerHTML = '⏳ Starting PostgreSQL container...';
+                
+                const response = await fetch(`${API_BASE}/api/databases`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, environment })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.details || error.error || 'Failed to create database');
+                }
+                
+                statusDiv.innerHTML = '✅ Database ready! Loading connection info...';
+                
+                const data = await response.json();
+                
+                // Close create modal first
+                if (createModal) createModal.remove();
+                
+                // Show connection info
+                showConnectionInfoData(data);
+                
+                // Refresh view
+                renderDatabasesView();
+                
+            } catch (error) {
+                console.error('Error creating database:', error);
+                
+                // Reset button
+                createButton.disabled = false;
+                createButton.innerHTML = originalButtonText;
+                
+                // Show error in status
+                if (statusDiv) {
+                    statusDiv.innerHTML = `❌ Error: ${error.message}`;
+                    statusDiv.style.color = 'var(--accent-red)';
+                }
+                
+                alert('Error creating database: ' + error.message);
+            }
+        }
+        
+        async function showConnectionInfo(databaseId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/databases/${databaseId}`);
+                const data = await response.json();
+                showConnectionInfoData(data);
+            } catch (error) {
+                console.error('Error fetching database info:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        function showConnectionInfoData(data) {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            `;
+            
+            const connectionString = `postgresql://${data.username}:${data.password}@${data.host}:${data.port}/${data.database}?sslmode=${data.ssl_mode || 'require'}`;
+            const connectionParams = `host = ${data.host}
+port = ${data.port}
+username = ${data.username}
+password = ${data.password}
+database = ${data.database}
+sslmode = ${data.ssl_mode || 'require'}`;
+            
+            modal.innerHTML = `
+                <div style="
+                    background: var(--bg-secondary);
+                    border-radius: 12px;
+                    padding: 32px;
+                    width: 90%;
+                    max-width: 650px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                ">
+                    <h2 style="margin-bottom: 24px; font-size: 24px; color: var(--text-primary);">Database Created Successfully</h2>
+                    
+                    <div style="
+                        background: #fef3c7;
+                        color: #92400e;
+                        padding: 14px 16px;
+                        border-radius: 8px;
+                        margin-bottom: 24px;
+                        font-size: 13px;
+                        line-height: 1.5;
+                    ">
+                        ⚠️ <strong>Important:</strong> Store these credentials securely. They cannot be recovered later.
+                    </div>
+                    
+                    <details open style="
+                        border: 1px solid var(--border-color);
+                        border-radius: 8px;
+                        margin-bottom: 20px;
+                        overflow: hidden;
+                    ">
+                        <summary style="
+                            padding: 16px 20px;
+                            cursor: pointer;
+                            font-weight: 600;
+                            font-size: 16px;
+                            background: var(--bg-primary);
+                            color: var(--text-primary);
+                            user-select: none;
+                            display: flex;
+                            align-items: center;
+                            justify-content: space-between;
+                        ">
+                            <span>Connection Parameters</span>
+                            <span style="font-size: 12px; color: var(--text-tertiary);">▼</span>
+                        </summary>
+                        <div style="
+                            padding: 20px;
+                            background: var(--bg-primary);
+                            border-top: 1px solid var(--border-color);
+                            font-family: 'SF Mono', Monaco, monospace;
+                            font-size: 13px;
+                            line-height: 2;
+                            color: var(--text-primary);
+                        ">
+                            <div><span style="color: var(--text-secondary); font-weight: 500;">host</span> = ${data.host}</div>
+                            <div><span style="color: var(--text-secondary); font-weight: 500;">port</span> = ${data.port}</div>
+                            <div><span style="color: var(--text-secondary); font-weight: 500;">username</span> = ${data.username}</div>
+                            <div style="display: flex; align-items: center;">
+                                <span style="color: var(--text-secondary); font-weight: 500;">password</span> = 
+                                <span id="password-hidden-${data.id}" style="margin-left: 4px;">************************</span>
+                                <span id="password-visible-${data.id}" style="margin-left: 4px; display: none;">${data.password}</span>
+                                <button 
+                                    onclick="togglePassword('${data.id}')"
+                                    style="
+                                        background: none;
+                                        border: none;
+                                        color: var(--accent-blue);
+                                        cursor: pointer;
+                                        padding: 0 8px;
+                                        font-size: 12px;
+                                        text-decoration: underline;
+                                    "
+                                    id="password-toggle-${data.id}"
+                                >
+                                    show
+                                </button>
+                            </div>
+                            <div><span style="color: var(--text-secondary); font-weight: 500;">database</span> = ${data.database}</div>
+                            <div><span style="color: var(--text-secondary); font-weight: 500;">sslmode</span> = ${data.ssl_mode || 'require'}</div>
+                        </div>
+                        <div style="
+                            padding: 12px 20px;
+                            background: var(--bg-primary);
+                            border-top: 1px solid var(--border-color);
+                        ">
+                            <button 
+                                onclick="copyConnectionParams(\`${connectionParams}\`)"
+                                style="
+                                    background: none;
+                                    border: none;
+                                    color: var(--accent-blue);
+                                    cursor: pointer;
+                                    padding: 4px 0;
+                                    font-size: 14px;
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 6px;
+                                "
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                Copy
+                            </button>
+                        </div>
+                    </details>
+                    
+                    <button 
+                        class="btn btn-primary" 
+                        onclick="this.closest('div').parentElement.remove()"
+                        style="width: 100%;"
+                    >
+                        Done
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+        
+        function togglePassword(dbId) {
+            const hidden = document.getElementById(`password-hidden-${dbId}`);
+            const visible = document.getElementById(`password-visible-${dbId}`);
+            const toggle = document.getElementById(`password-toggle-${dbId}`);
+            
+            if (hidden.style.display === 'none') {
+                hidden.style.display = 'inline';
+                visible.style.display = 'none';
+                toggle.textContent = 'show';
+            } else {
+                hidden.style.display = 'none';
+                visible.style.display = 'inline';
+                toggle.textContent = 'hide';
+            }
+        }
+        
+        function copyConnectionParams(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target.closest('button');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Copied!
+                `;
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('❌ Failed to copy to clipboard');
+            });
+        }
+        
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ Copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('❌ Failed to copy to clipboard');
+            });
+        }
+        
+        async function controlDatabase(databaseId, action) {
+            try {
+                const response = await fetch(`${API_BASE}/api/databases/${databaseId}/${action}`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to ${action} database`);
+                }
+                
+                // Wait a moment for the action to complete
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Refresh view
+                renderDatabasesView();
+                
+            } catch (error) {
+                console.error(`Error ${action} database:`, error);
+                alert(`Error: ${error.message}`);
+            }
+        }
+        
+        async function deleteDatabase(databaseId, databaseName) {
+            if (!confirm(`⚠️ Are you sure you want to delete database "${databaseName}"?\n\nThis action cannot be undone!`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/databases/${databaseId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to delete database');
+                }
+                
+                // Refresh view
+                renderDatabasesView();
+                
+            } catch (error) {
+                console.error('Error deleting database:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        // Backup functions
+        async function renderBackupsView() {
+            const thead = document.querySelector('thead tr');
+            thead.innerHTML = `
+                <th>Filename</th>
+                <th>Container</th>
+                <th>Date</th>
+                <th>Size</th>
+                <th>Location</th>
+                <th>Actions</th>
+            `;
+            
+            const tbody = document.getElementById('deployments-table');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">⏳</div>
+                            <p>Loading backups...</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            try {
+                const [backupsRes, databasesRes] = await Promise.all([
+                    fetch(`${API_BASE}/api/backups`),
+                    fetch(`${API_BASE}/api/backups/databases`)
+                ]);
+                
+                const backupsData = await backupsRes.json();
+                const databasesData = await databasesRes.json();
+                
+                // Add create backup section at the top
+                const headerActions = document.querySelector('.header-actions');
+                if (headerActions && !document.getElementById('backup-controls')) {
+                    const backupControls = document.createElement('div');
+                    backupControls.id = 'backup-controls';
+                    backupControls.style.display = 'flex';
+                    backupControls.style.gap = '12px';
+                    backupControls.innerHTML = `
+                        <select id="backup-database-select" class="btn" style="padding: 8px 16px;">
+                            <option value="">Select Database</option>
+                            ${databasesData.databases.map(db => `<option value="${db}">${db}</option>`).join('')}
+                        </select>
+                        <button class="btn btn-primary" onclick="createBackup()">Create Backup</button>
+                    `;
+                    headerActions.appendChild(backupControls);
+                }
+                
+                if (backupsData.backups.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">📦</div>
+                                    <p>No backups yet. Create your first backup above.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tbody.innerHTML = backupsData.backups.map(backup => `
+                    <tr>
+                        <td>
+                            <div class="product-name">${backup.filename}</div>
+                        </td>
+                        <td>${backup.containerName}</td>
+                        <td>${backup.date} ${backup.time}</td>
+                        <td>${backup.sizeFormatted}</td>
+                        <td><span class="status-badge ${backup.location === 's3' ? 'active' : 'pending'}">${backup.location.toUpperCase()}</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-icon" onclick="restoreBackup('${backup.filename}', '${backup.containerName}')" title="Restore"><img src="/repeat.png" style="width: 16px; height: 16px;"></button>
+                                <button class="btn-icon delete" onclick="deleteBackup('${backup.filename}')" title="Delete"><img src="/trash-xmark.png" style="width: 16px; height: 16px;"></button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+                
+            } catch (err) {
+                console.error('Error loading backups:', err);
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">❌</div>
+                                <p>Error loading backups: ${err.message}</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        async function createBackup() {
+            const select = document.getElementById('backup-database-select');
+            const containerName = select.value;
+            
+            if (!containerName) {
+                alert('Please select a database');
+                return;
+            }
+            
+            if (!confirm(`Create backup for ${containerName}?`)) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/backups/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ containerName })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    alert(`✅ Backup created successfully!\nFilename: ${data.filename}\nSize: ${data.size}`);
+                    renderBackupsView();
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Failed to create backup'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+        
+        async function restoreBackup(filename, containerName) {
+            if (!confirm(`⚠️ WARNING: Restore backup ${filename}?\n\nThis will OVERWRITE the current database in ${containerName}.\nMake sure you have a recent backup before proceeding!`)) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/backups/restore`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename, containerName })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    alert('✅ Backup restored successfully!');
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Failed to restore backup'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+        
+        async function deleteBackup(filename) {
+            if (!confirm(`Delete backup ${filename}?`)) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/backups/${encodeURIComponent(filename)}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    alert('✅ Backup deleted successfully');
+                    renderBackupsView();
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Failed to delete backup'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+        
+        // Initial load
+        checkAuth().then(() => loadAll());
+    </script>
+</body>
+</html>
