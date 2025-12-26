@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/Vellaric-signal.png" alt="Vellaric-Signal" width="600">
+  <img src="https://github.com/Vellaric/vellaric-signal/blob/main/public/Vellaric-signal.png" alt="Vellaric-Signal" width="600">
 </div>
 
 # Vellaric-Signal
