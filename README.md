@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="public/Vellaric-signal.png" alt="Vellaric-Signal" width="600">
+</div>
+
 # Vellaric-Signal
 
 GitLab webhook server for automated Docker deployments with HTTPS - similar to Digital Ocean App Platform.
