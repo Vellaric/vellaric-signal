@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSocket } from '../contexts/SocketContext';
 import { deploymentsAPI } from '../services/api';
-import { Clock, CheckCircle, XCircle, AlertCircle, FileText, Loader, Trash2 } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, AlertCircle, FileText, Loader, Trash2, RefreshCw } from 'lucide-react';
 
 export default function Deployments() {
   const [activeTab, setActiveTab] = useState('history');
@@ -42,13 +42,17 @@ export default function Deployments() {
 
   const loadData = async () => {
     try {
+      console.log('Loading deployments data...');
       const [deploymentsRes, queueRes] = await Promise.all([
         deploymentsAPI.getAll(),
         deploymentsAPI.getQueue()
       ]);
       
-      setDeployments(deploymentsRes.data.data || []);
-      setQueue(queueRes.data.data || []);
+      console.log('Deployments response:', deploymentsRes.data);
+      console.log('Queue response:', queueRes.data);
+      
+      setDeployments(deploymentsRes.data.deployments || []);
+      setQueue(queueRes.data.queue || []);
     } catch (error) {
       console.error('Failed to load deployments:', error);
     } finally {
@@ -97,100 +101,124 @@ export default function Deployments() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader className="w-8 h-8 animate-spin text-[hsl(var(--primary))]" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Deployments</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Monitor and manage your deployments</p>
+          <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Droplets</h1>
+          <p className="text-[hsl(var(--muted-foreground))] mt-1 text-sm">
+            Monitor and manage your deployments
+          </p>
         </div>
-        <button onClick={loadData} className="btn flex items-center gap-2">
-          <Loader className="w-4 h-4" />
+        <button 
+          onClick={loadData} 
+          className="btn-primary flex items-center gap-2"
+          disabled={loading}
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-4 border-b border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => setActiveTab('history')}
-          className={`px-4 py-2 font-medium text-sm transition-colors ${
-            activeTab === 'history'
-              ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-          }`}
-        >
-          History ({deployments.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('queue')}
-          className={`px-4 py-2 font-medium text-sm transition-colors ${
-            activeTab === 'queue'
-              ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-          }`}
-        >
-          Queue ({queue.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('active')}
-          className={`px-4 py-2 font-medium text-sm transition-colors ${
-            activeTab === 'active'
-              ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-          }`}
-        >
-          Active ({activeDeployments.length})
-        </button>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-[hsl(var(--card))] p-6 rounded-lg border border-[hsl(var(--border))]">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">Total Deployments</p>
+              <p className="text-3xl font-bold text-[hsl(var(--foreground))] mt-1">{deployments.length}</p>
+            </div>
+            <Clock className="w-8 h-8 text-[hsl(var(--muted-foreground))]" />
+          </div>
+        </div>
+        
+        <div className="bg-[hsl(var(--card))] p-6 rounded-lg border border-[hsl(var(--border))]">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">Active</p>
+              <p className="text-3xl font-bold text-[hsl(var(--success))] mt-1">{activeDeployments.length}</p>
+            </div>
+            <CheckCircle className="w-8 h-8 text-[hsl(var(--success))]" />
+          </div>
+        </div>
+        
+        <div className="bg-[hsl(var(--card))] p-6 rounded-lg border border-[hsl(var(--border))]">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">Queue</p>
+              <p className="text-3xl font-bold text-[hsl(var(--warning))] mt-1">{queue.length}</p>
+            </div>
+            <Loader className="w-8 h-8 text-[hsl(var(--warning))]" />
+          </div>
+        </div>
       </div>
 
-      {/* Deployments Table */}
-      <div className="card overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Project</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Domain</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Branch</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            {filteredData.length === 0 ? (
-              <tr>
-                <td colSpan="6" className="px-6 py-12">
-                  <div className="text-center">
-                    <Clock className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-                      {activeTab === 'queue' ? 'No deployments in queue' :
-                       activeTab === 'active' ? 'No active deployments' : 'No deployment history'}
-                    </h3>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                      Deploy a project to see it here
-                    </p>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              filteredData.map((deployment) => (
-                <DeploymentRow
-                  key={deployment.id}
-                  deployment={deployment}
-                  onShowLogs={handleShowLogs}
-                  onDelete={handleDeleteDeployment}
-                  isActive={activeTab === 'active'}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
+      {/* Tabs */}
+      <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg">
+        <div className="flex gap-1 p-2 border-b border-[hsl(var(--border))]">
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`px-4 py-2 rounded font-medium text-sm transition-all ${
+              activeTab === 'history'
+                ? 'bg-[hsl(var(--primary))] text-white'
+                : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]'
+            }`}
+          >
+            History ({deployments.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('queue')}
+            className={`px-4 py-2 rounded font-medium text-sm transition-all ${
+              activeTab === 'queue'
+                ? 'bg-[hsl(var(--primary))] text-white'
+                : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]'
+            }`}
+          >
+            Queue ({queue.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('active')}
+            className={`px-4 py-2 rounded font-medium text-sm transition-all ${
+              activeTab === 'active'
+                ? 'bg-[hsl(var(--primary))] text-white'
+                : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]'
+            }`}
+          >
+            Active ({activeDeployments.length})
+          </button>
+        </div>
+
+        {/* Deployments List */}
+        <div className="divide-y divide-[hsl(var(--border))]">
+          {filteredData.length === 0 ? (
+            <div className="p-12 text-center">
+              <Clock className="mx-auto h-16 w-16 text-[hsl(var(--muted-foreground))] opacity-50" />
+              <h3 className="mt-4 text-lg font-semibold text-[hsl(var(--foreground))]">
+                {activeTab === 'queue' ? 'No deployments in queue' :
+                 activeTab === 'active' ? 'No active droplets' : 'No deployment history'}
+              </h3>
+              <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+                Deploy a project to see it here
+              </p>
+            </div>
+          ) : (
+            filteredData.map((deployment) => (
+              <DeploymentCard
+                key={deployment.id || `${deployment.project_name}-${deployment.branch}`}
+                deployment={deployment}
+                onShowLogs={handleShowLogs}
+                onDelete={handleDeleteDeployment}
+                isActive={activeTab === 'active'}
+              />
+            ))
+          )}
+        </div>
       </div>
 
       {/* Logs Modal */}
@@ -210,16 +238,40 @@ export default function Deployments() {
   );
 }
 
-function DeploymentRow({ deployment, onShowLogs, onDelete, isActive }) {
+function DeploymentCard({ deployment, onShowLogs, onDelete, isActive }) {
   const getStatusConfig = (status) => {
     if (status === 'success' || status === 'deployed' || status === 'active') {
-      return { icon: CheckCircle, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-100 dark:bg-green-900/30', label: 'Success' };
+      return { 
+        icon: CheckCircle, 
+        color: 'text-[hsl(var(--success))]', 
+        bg: 'bg-[hsl(var(--success))]/10', 
+        label: 'Running',
+        dot: 'bg-[hsl(var(--success))]'
+      };
     } else if (status === 'failed') {
-      return { icon: XCircle, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-100 dark:bg-red-900/30', label: 'Failed' };
+      return { 
+        icon: XCircle, 
+        color: 'text-[hsl(var(--destructive))]', 
+        bg: 'bg-[hsl(var(--destructive))]/10', 
+        label: 'Failed',
+        dot: 'bg-[hsl(var(--destructive))]'
+      };
     } else if (status === 'building' || status === 'in-progress') {
-      return { icon: Loader, color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-100 dark:bg-yellow-900/30', label: 'Building' };
+      return { 
+        icon: Loader, 
+        color: 'text-[hsl(var(--warning))]', 
+        bg: 'bg-[hsl(var(--warning))]/10', 
+        label: 'Building',
+        dot: 'bg-[hsl(var(--warning))] animate-pulse'
+      };
     } else {
-      return { icon: Clock, color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-800', label: 'Queued' };
+      return { 
+        icon: Clock, 
+        color: 'text-[hsl(var(--muted-foreground))]', 
+        bg: 'bg-[hsl(var(--muted))]/50', 
+        label: 'Queued',
+        dot: 'bg-[hsl(var(--muted-foreground))]'
+      };
     }
   };
 
@@ -239,44 +291,75 @@ function DeploymentRow({ deployment, onShowLogs, onDelete, isActive }) {
   const StatusIcon = statusConfig.icon;
 
   return (
-    <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-      <td className="px-6 py-4">
-        <div>
-          <div className="text-sm font-medium text-gray-900 dark:text-white">{deployment.project_name}</div>
-          {deployment.commit && (
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              <code>{deployment.commit.substring(0, 8)}</code>
+    <div className="p-6 hover:bg-[hsl(var(--accent))] transition-colors">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4 flex-1">
+          {/* Status Indicator */}
+          <div className={`w-3 h-3 rounded-full ${statusConfig.dot}`}></div>
+          
+          {/* Project Info */}
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                {deployment.project_name}
+              </h3>
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${statusConfig.bg} ${statusConfig.color}`}>
+                <StatusIcon className="w-3.5 h-3.5" />
+                {statusConfig.label}
+              </span>
             </div>
-          )}
+            
+            <div className="flex items-center gap-6 text-sm text-[hsl(var(--muted-foreground))]">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Region:</span>
+                <span className="font-mono text-xs bg-[hsl(var(--muted))] px-2 py-0.5 rounded">
+                  {deployment.region || 'NYC3'}
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Branch:</span>
+                <span className="font-mono text-xs bg-[hsl(var(--muted))] px-2 py-0.5 rounded">
+                  {deployment.branch || 'main'}
+                </span>
+              </div>
+              
+              {deployment.commit && (
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Commit:</span>
+                  <code className="font-mono text-xs bg-[hsl(var(--muted))] px-2 py-0.5 rounded">
+                    {deployment.commit.substring(0, 8)}
+                  </code>
+                </div>
+              )}
+              
+              {deployment.domain && deployment.domain !== 'Pending...' && (
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Domain:</span>
+                  <a 
+                    href={`https://${deployment.domain}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-[hsl(var(--primary))] hover:underline font-mono text-xs"
+                  >
+                    {deployment.domain}
+                  </a>
+                </div>
+              )}
+              
+              <div className="ml-auto text-xs">
+                {formatTime(deployment.created_at || deployment.updated_at || deployment.queuedAt)}
+              </div>
+            </div>
+          </div>
         </div>
-      </td>
-      <td className="px-6 py-4">
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.color}`}>
-          <StatusIcon className="w-3 h-3 mr-1" />
-          {statusConfig.label}
-        </span>
-      </td>
-      <td className="px-6 py-4">
-        {deployment.domain && deployment.domain !== 'Pending...' ? (
-          <a href={`https://${deployment.domain}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm">
-            {deployment.domain}
-          </a>
-        ) : (
-          <span className="text-gray-500 dark:text-gray-400 text-sm">-</span>
-        )}
-      </td>
-      <td className="px-6 py-4">
-        <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{deployment.branch || 'main'}</code>
-      </td>
-      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-        {formatTime(deployment.created_at || deployment.updated_at)}
-      </td>
-      <td className="px-6 py-4 text-sm font-medium">
-        <div className="flex items-center gap-2">
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 ml-6">
           {deployment.id && (
             <button
               onClick={() => onShowLogs(deployment)}
-              className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+              className="p-2 rounded-lg bg-[hsl(var(--secondary))] hover:bg-[hsl(220,16%,20%)] text-[hsl(var(--foreground))] transition-colors"
               title="View Logs"
             >
               <FileText className="w-4 h-4" />
@@ -285,35 +368,50 @@ function DeploymentRow({ deployment, onShowLogs, onDelete, isActive }) {
           {isActive && (
             <button
               onClick={() => onDelete(deployment.project_name, deployment.branch)}
-              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-              title="Delete"
+              className="p-2 rounded-lg bg-[hsl(var(--destructive))]/10 hover:bg-[hsl(var(--destructive))]/20 text-[hsl(var(--destructive))] transition-colors"
+              title="Delete Deployment"
             >
               <Trash2 className="w-4 h-4" />
             </button>
           )}
         </div>
-      </td>
-    </tr>
+      </div>
+    </div>
   );
 }
 
 function LogsModal({ deployment, logs, onClose, onRefresh }) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-lg p-8 max-w-4xl w-full max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Deployment Logs: {deployment.project_name}
-          </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-            ✕
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg max-w-5xl w-full max-h-[85vh] flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between p-6 border-b border-[hsl(var(--border))]">
+          <div>
+            <h2 className="text-xl font-bold text-[hsl(var(--foreground))]">
+              Deployment Logs
+            </h2>
+            <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+              {deployment.project_name} • {deployment.branch || 'main'}
+            </p>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+          >
+            <XCircle className="w-6 h-6" />
           </button>
         </div>
-        <pre className="flex-1 bg-gray-900 text-gray-100 p-4 rounded-lg overflow-auto font-mono text-sm mb-4">
-          {logs}
-        </pre>
-        <div className="flex gap-3 justify-end">
-          <button onClick={onRefresh} className="btn">Refresh</button>
+        
+        <div className="flex-1 overflow-auto p-6">
+          <pre className="bg-[hsl(220,20%,5%)] text-gray-100 p-6 rounded-lg overflow-auto font-mono text-xs leading-relaxed border border-[hsl(var(--border))]">
+            {logs || 'No logs available'}
+          </pre>
+        </div>
+        
+        <div className="flex gap-3 justify-end p-6 border-t border-[hsl(var(--border))]">
+          <button onClick={onRefresh} className="btn-secondary flex items-center gap-2">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
           <button onClick={onClose} className="btn-primary">Close</button>
         </div>
       </div>
