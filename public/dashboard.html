@@ -414,6 +414,10 @@
                         <span class="icon"><img src="/chart-column-alt.png" style="width: 18px; height: 18px;"></span>
                         <span>Overview</span>
                     </div>
+                    <div class="nav-item" onclick="switchView('projects')" data-view="projects">
+                        <span class="icon">📦</span>
+                        <span>Projects</span>
+                    </div>
                     <div class="nav-item" onclick="switchView('queue')" data-view="queue">
                         <span class="icon"><img src="/hourglass.png" style="width: 18px; height: 18px;"></span>
                         <span>Queue</span>
@@ -674,6 +678,7 @@
             // Update page title
             const titles = {
                 'overview': 'Deployments Overview',
+                'projects': 'Projects',
                 'queue': 'Deployment Queue',
                 'active': 'Active Deployments',
                 'logs': 'Deployment Logs',
@@ -761,6 +766,9 @@
                         ...allData.history.filter(d => d.status === 'failed').slice(0, 5)
                     ];
                     break;
+                case 'projects':
+                    renderProjectsView();
+                    return;
                 case 'queue':
                     deployments = allData.queue;
                     break;
@@ -1344,6 +1352,403 @@
             }
         }
         
+        // Projects Management
+        async function renderProjectsView() {
+            const thead = document.querySelector('thead tr');
+            thead.innerHTML = `
+                <th>Project Name</th>
+                <th>Repository</th>
+                <th>Default Branch</th>
+                <th>Auto Deploy</th>
+                <th>Status</th>
+                <th>Actions</th>
+            `;
+            
+            const tbody = document.getElementById('deployments-table');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <p>Loading projects...</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            // Add controls for creating projects
+            const headerActions = document.querySelector('.header-actions');
+            if (!document.getElementById('project-controls')) {
+                const controls = document.createElement('div');
+                controls.id = 'project-controls';
+                controls.innerHTML = `
+                    <button class="btn" onclick="showImportGitLabModal()">
+                        Import from GitLab
+                    </button>
+                    <button class="btn btn-primary" onclick="showAddProjectModal()">
+                        + Add Project
+                    </button>
+                `;
+                headerActions.insertBefore(controls, headerActions.firstChild);
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/projects`);
+                const data = await res.json();
+                
+                if (!data.success || data.data.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">📦</div>
+                                    <p>No projects configured yet.</p>
+                                    <p style="color: var(--text-tertiary); font-size: 14px; margin-top: 8px;">Add your first project to start deploying applications.</p>
+                                    <button class="btn btn-primary" onclick="showAddProjectModal()" style="margin-top: 12px;">+ Add Your First Project</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                const projects = data.data;
+                
+                tbody.innerHTML = projects.map(project => {
+                    const autoDeployBadge = project.auto_deploy ? 
+                        '<span class="status-badge" style="background: var(--accent-green);">✓ On</span>' :
+                        '<span class="status-badge" style="background: var(--text-tertiary);">✗ Off</span>';
+                    
+                    return `
+                        <tr>
+                            <td>
+                                <strong>${project.name}</strong>
+                                ${project.description ? `<div style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px;">${project.description}</div>` : ''}
+                            </td>
+                            <td><code style="font-size: 12px;">${project.repo_url}</code></td>
+                            <td><code>${project.default_branch}</code></td>
+                            <td>${autoDeployBadge}</td>
+                            <td><span class="status-badge" style="background: var(--accent-blue);">Active</span></td>
+                            <td>
+                                <button class="btn-icon" onclick="showDeployModal('${project.id}')" title="Deploy">🚀</button>
+                                <button class="btn-icon" onclick="showEnvVarsForProject('${project.id}')" title="Environment">⚙️</button>
+                                <button class="btn-icon" onclick="editProject('${project.id}')" title="Edit">✏️</button>
+                                <button class="btn-icon" onclick="deleteProjectConfirm('${project.id}', '${project.name}')" title="Delete">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('Error loading projects:', err);
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">❌</div>
+                                <p>Error loading projects</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        function showAddProjectModal() {
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+            modal.innerHTML = `
+                <div style="background: var(--bg-secondary); padding: 32px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                    <h2 style="margin-bottom: 24px;">Add New Project</h2>
+                    <form id="project-form" onsubmit="submitProject(event)">
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Project Name * <span style="color: var(--text-tertiary); font-weight: 400; font-size: 12px;">(alphanumeric, hyphens, underscores)</span></label>
+                            <input type="text" id="project-name" required pattern="[a-zA-Z0-9_-]+" placeholder="my-awesome-app" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Repository URL *</label>
+                            <input type="url" id="project-repo" required placeholder="https://gitlab.com/username/repo.git" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Default Branch</label>
+                            <select id="project-branch" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                                <option value="production">production</option>
+                                <option value="master">master</option>
+                                <option value="dev">dev</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Enabled Branches <span style="color: var(--text-tertiary); font-weight: 400; font-size: 12px;">(comma-separated)</span></label>
+                            <input type="text" id="project-branches" value="production,master,dev" placeholder="production,master,dev" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Description <span style="color: var(--text-tertiary); font-weight: 400; font-size: 12px;">(optional)</span></label>
+                            <textarea id="project-description" rows="2" placeholder="Brief description of this project" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); resize: vertical;"></textarea>
+                        </div>
+                        <div style="margin-bottom: 24px;">
+                            <label style="display: flex; align-items: center; cursor: pointer;">
+                                <input type="checkbox" id="project-autodeploy" checked style="margin-right: 8px;">
+                                <span>🚀 Enable automatic deployment on push</span>
+                            </label>
+                        </div>
+                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                            <button type="button" class="btn" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Add Project</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        }
+        
+        async function submitProject(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('project-name').value;
+            const repoUrl = document.getElementById('project-repo').value;
+            const defaultBranch = document.getElementById('project-branch').value;
+            const enabledBranches = document.getElementById('project-branches').value;
+            const description = document.getElementById('project-description').value;
+            const autoDeploy = document.getElementById('project-autodeploy').checked;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/projects`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name,
+                        repoUrl,
+                        defaultBranch,
+                        enabledBranches,
+                        autoDeploy,
+                        description
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    alert('✅ Project added successfully! You can now configure environment variables and deploy.');
+                    document.querySelector('div[style*="fixed"]').remove();
+                    renderProjectsView();
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Failed to add project'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+        
+        function showDeployModal(projectId) {
+            // Fetch project details
+            fetch(`${API_BASE}/api/projects/${projectId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.error);
+                    
+                    const project = data.data;
+                    const branches = project.enabled_branches.split(',');
+                    const branchOptions = branches.map(b => 
+                        `<option value="${b}" ${b === project.default_branch ? 'selected' : ''}>${b}</option>`
+                    ).join('');
+                    
+                    const modal = document.createElement('div');
+                    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+                    modal.innerHTML = `
+                        <div style="background: var(--bg-secondary); padding: 32px; border-radius: 12px; max-width: 500px; width: 90%;">
+                            <h2 style="margin-bottom: 24px;">Deploy ${project.name}</h2>
+                            <form id="deploy-form" onsubmit="triggerDeploy(event, '${projectId}')">
+                                <div style="margin-bottom: 16px;">
+                                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Branch</label>
+                                    <select id="deploy-branch" required style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                                        ${branchOptions}
+                                    </select>
+                                </div>
+                                <div style="background: var(--bg-primary); padding: 16px; border-radius: 8px; margin-bottom: 24px;">
+                                    <p style="font-size: 14px; color: var(--text-secondary);">
+                                        <strong>Repository:</strong><br>
+                                        <code style="font-size: 12px;">${project.repo_url}</code>
+                                    </p>
+                                </div>
+                                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                                    <button type="button" class="btn" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">🚀 Deploy Now</button>
+                                </div>
+                            </form>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                    
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) modal.remove();
+                    });
+                })
+                .catch(err => alert('❌ Error loading project: ' + err.message));
+        }
+        
+        async function triggerDeploy(event, projectId) {
+            event.preventDefault();
+            
+            const branch = document.getElementById('deploy-branch').value;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/projects/${projectId}/deploy`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ branch })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    alert(`✅ Deployment queued successfully!\nProject: ${data.project}\nBranch: ${data.branch}`);
+                    document.querySelector('div[style*="fixed"]').remove();
+                    switchView('queue');
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Failed to trigger deployment'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+        
+        function showEnvVarsForProject(projectId) {
+            // Switch to environment view and filter by project
+            switchView('environment');
+            // Store projectId for filtering (implement filtering in renderEnvironmentView)
+            window.currentProjectFilter = projectId;
+        }
+        
+        async function deleteProjectConfirm(projectId, projectName) {
+            if (!confirm(`Are you sure you want to delete project "${projectName}"?\n\nThis will also delete all associated environment variables and deployment history.`)) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/projects/${projectId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    alert('✅ Project deleted successfully!');
+                    renderProjectsView();
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Failed to delete project'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+        
+        function editProject(projectId) {
+            alert('Edit functionality coming soon! For now, you can delete and recreate the project.');
+        }
+        
+        async function showImportGitLabModal() {
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+            modal.innerHTML = `
+                <div style="background: var(--bg-secondary); padding: 32px; border-radius: 12px; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                    <h2 style="margin-bottom: 24px;">Import from GitLab</h2>
+                    <div id="gitlab-projects-list">
+                        <p style="text-align: center; padding: 40px; color: var(--text-tertiary);">Loading GitLab projects...</p>
+                    </div>
+                    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                        <button class="btn" onclick="this.closest('div[style*=fixed]').remove()">Close</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/projects/gitlab/list`);
+                const data = await res.json();
+                
+                const listContainer = document.getElementById('gitlab-projects-list');
+                
+                if (!data.success) {
+                    listContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px;">
+                            <p style="color: var(--accent-red); margin-bottom: 12px;">❌ ${data.error}</p>
+                            <p style="font-size: 14px; color: var(--text-tertiary);">Please configure GITLAB_ACCESS_TOKEN in your .env file</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                if (data.data.length === 0) {
+                    listContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px;">
+                            <p style="color: var(--text-tertiary);">No GitLab projects found</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                listContainer.innerHTML = data.data.map(proj => `
+                    <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                                <strong>${proj.fullName}</strong>
+                                ${proj.description ? `<p style="font-size: 12px; color: var(--text-tertiary); margin-top: 4px;">${proj.description}</p>` : ''}
+                                <p style="font-size: 11px; color: var(--text-tertiary); margin-top: 8px;">
+                                    <code>${proj.httpUrl}</code>
+                                </p>
+                            </div>
+                            <button class="btn btn-primary" onclick="importGitLabProject('${proj.id}', '${proj.name}', '${proj.httpUrl}', '${proj.defaultBranch}', '${proj.description || ''}')">
+                                Import
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                document.getElementById('gitlab-projects-list').innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <p style="color: var(--accent-red);">❌ Error loading GitLab projects: ${err.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function importGitLabProject(gitlabId, name, repoUrl, defaultBranch, description) {
+            try {
+                const res = await fetch(`${API_BASE}/api/projects`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name,
+                        repoUrl,
+                        gitlabProjectId: gitlabId,
+                        defaultBranch: defaultBranch || 'production',
+                        enabledBranches: 'production,master,dev',
+                        autoDeploy: true,
+                        description
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    alert(`✅ Project "${name}" imported successfully!`);
+                    document.querySelector('div[style*="fixed"]').remove();
+                    renderProjectsView();
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Failed to import project'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+        
         // Environment Variables Management
         async function renderEnvironmentView() {
             const thead = document.querySelector('thead tr');
@@ -1382,18 +1787,18 @@
             }
             
             try {
-                // Get list of unique projects from active deployments and history
-                const projects = new Set();
-                allData.active.forEach(d => projects.add(d.project_name));
-                allData.history.forEach(d => projects.add(d.project_name));
+                // Fetch all projects first
+                const projectsRes = await fetch(`${API_BASE}/api/projects`);
+                const projectsData = await projectsRes.json();
                 
-                if (projects.size === 0) {
+                if (!projectsData.success || projectsData.data.length === 0) {
                     tbody.innerHTML = `
                         <tr>
                             <td colspan="6">
                                 <div class="empty-state">
                                     <div class="empty-state-icon">📦</div>
-                                    <p>No projects found. Deploy an app first to configure environment variables.</p>
+                                    <p>No projects found. Add a project first to configure environment variables.</p>
+                                    <button class="btn btn-primary" onclick="switchView('projects')" style="margin-top: 12px;">+ Add Your First Project</button>
                                 </div>
                             </td>
                         </tr>
@@ -1401,24 +1806,31 @@
                     return;
                 }
                 
+                const projects = projectsData.data;
+                
+                // Create a map of project ID to project name
+                const projectMap = {};
+                projects.forEach(p => {
+                    projectMap[p.id] = p.name;
+                });
+                
                 // Fetch environment variables for all projects
-                const envVarsMap = {};
+                const allEnvVars = [];
                 for (const project of projects) {
                     try {
-                        const res = await fetch(`${API_BASE}/api/env/${encodeURIComponent(project)}`);
+                        const res = await fetch(`${API_BASE}/api/env/${project.id}`);
                         const data = await res.json();
-                        if (data.success) {
-                            envVarsMap[project] = data.data;
+                        if (data.success && data.data.length > 0) {
+                            // Add project name to each env var
+                            const varsWithProject = data.data.map(v => ({
+                                ...v,
+                                project_name: project.name
+                            }));
+                            allEnvVars.push(...varsWithProject);
                         }
                     } catch (err) {
-                        console.error(`Error loading env vars for ${project}:`, err);
+                        console.error(`Error loading env vars for ${project.name}:`, err);
                     }
-                }
-                
-                // Flatten all env vars
-                const allEnvVars = [];
-                for (const [project, vars] of Object.entries(envVarsMap)) {
-                    allEnvVars.push(...vars);
                 }
                 
                 if (allEnvVars.length === 0) {
@@ -1475,99 +1887,133 @@
             }
         }
         
-        function showAddEnvModal() {
-            // Get unique projects
-            const projects = new Set();
-            allData.active.forEach(d => projects.add(d.project_name));
-            allData.history.forEach(d => projects.add(d.project_name));
+        async function showAddEnvModal() {
+            // Fetch projects from API instead of from deployments
+            try {
+                const res = await fetch(`${API_BASE}/api/projects`);
+                const data = await res.json();
+                
+                if (!data.success || data.data.length === 0) {
+                    alert('⚠️ Please add a project first before configuring environment variables.');
+                    switchView('projects');
+                    return;
+                }
+                
+                const projectOptions = data.data.map(p => 
+                    `<option value="${p.id}" data-branches="${p.enabled_branches}">${p.name}</option>`
+                ).join('');
+                
+                const modal = document.createElement('div');
+                modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+                modal.innerHTML = `
+                    <div style="background: var(--bg-secondary); padding: 32px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                        <h2 style="margin-bottom: 24px;">Add Environment Variable</h2>
+                        <form id="env-form" onsubmit="submitEnvVar(event)">
+                            <div style="margin-bottom: 16px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Project *</label>
+                                <select id="env-project" required onchange="updateBranchOptions()" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                                    <option value="">Select project</option>
+                                    ${projectOptions}
+                                </select>
+                            </div>
+                            <div style="margin-bottom: 16px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Branch *</label>
+                                <select id="env-branch" required style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                                    <option value="">Select project first</option>
+                                </select>
+                            </div>
+                            <div style="margin-bottom: 16px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Key * <span style="color: var(--text-tertiary); font-weight: 400; font-size: 12px;">(e.g., NODE_ENV, DATABASE_URL)</span></label>
+                                <input type="text" id="env-key" required pattern="[A-Z_][A-Z0-9_]*" placeholder="NODE_ENV" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div style="margin-bottom: 16px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Value *</label>
+                                <textarea id="env-value" required rows="3" placeholder="production" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-family: monospace; resize: vertical;"></textarea>
+                            </div>
+                            <div style="margin-bottom: 16px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Description <span style="color: var(--text-tertiary); font-weight: 400; font-size: 12px;">(optional)</span></label>
+                                <input type="text" id="env-description" placeholder="Environment mode for the application" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            </div>
+                            <div style="margin-bottom: 16px;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" id="env-secret" style="margin-right: 8px;">
+                                    <span>🔒 Mark as secret (value will be masked)</span>
+                                </label>
+                            </div>
+                            <div style="margin-bottom: 24px;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" id="env-redeploy" style="margin-right: 8px;">
+                                    <span>🚀 Redeploy after saving (applies changes immediately)</span>
+                                </label>
+                            </div>
+                            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                                <button type="button" class="btn" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Add Variable</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                // Click outside to close
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) modal.remove();
+                });
+            } catch (err) {
+                alert('❌ Error loading projects: ' + err.message);
+            }
+        }
+        
+        function updateBranchOptions() {
+            const projectSelect = document.getElementById('env-project');
+            const branchSelect = document.getElementById('env-branch');
+            const selectedOption = projectSelect.options[projectSelect.selectedIndex];
             
-            const projectOptions = Array.from(projects).map(p => 
-                `<option value="${p}">${p}</option>`
+            if (!selectedOption || !selectedOption.value) {
+                branchSelect.innerHTML = '<option value="">Select project first</option>';
+                return;
+            }
+            
+            const branches = selectedOption.getAttribute('data-branches').split(',');
+            branchSelect.innerHTML = branches.map(b => 
+                `<option value="${b}">${b}</option>`
             ).join('');
-            
-            const modal = document.createElement('div');
-            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
-            modal.innerHTML = `
-                <div style="background: var(--bg-secondary); padding: 32px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
-                    <h2 style="margin-bottom: 24px;">Add Environment Variable</h2>
-                    <form id="env-form" onsubmit="submitEnvVar(event)">
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Project *</label>
-                            <select id="env-project" required style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
-                                <option value="">Select project</option>
-                                ${projectOptions}
-                            </select>
-                        </div>
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Branch *</label>
-                            <select id="env-branch" required style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
-                                <option value="">Select branch</option>
-                                <option value="production">production</option>
-                                <option value="master">master</option>
-                                <option value="dev">dev</option>
-                            </select>
-                        </div>
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Key * <span style="color: var(--text-tertiary); font-weight: 400; font-size: 12px;">(e.g., NODE_ENV, DATABASE_URL)</span></label>
-                            <input type="text" id="env-key" required pattern="[A-Z_][A-Z0-9_]*" placeholder="NODE_ENV" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
-                        </div>
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Value *</label>
-                            <textarea id="env-value" required rows="3" placeholder="production" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-family: monospace; resize: vertical;"></textarea>
-                        </div>
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Description <span style="color: var(--text-tertiary); font-weight: 400; font-size: 12px;">(optional)</span></label>
-                            <input type="text" id="env-description" placeholder="Environment mode for the application" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
-                        </div>
-                        <div style="margin-bottom: 24px;">
-                            <label style="display: flex; align-items: center; cursor: pointer;">
-                                <input type="checkbox" id="env-secret" style="margin-right: 8px;">
-                                <span>🔒 Mark as secret (value will be masked)</span>
-                            </label>
-                        </div>
-                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                            <button type="button" class="btn" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Add Variable</button>
-                        </div>
-                    </form>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            
-            // Click outside to close
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) modal.remove();
-            });
         }
         
         async function submitEnvVar(event) {
             event.preventDefault();
             
-            const project = document.getElementById('env-project').value;
+            const projectId = document.getElementById('env-project').value;
             const branch = document.getElementById('env-branch').value;
             const key = document.getElementById('env-key').value.toUpperCase();
             const value = document.getElementById('env-value').value;
             const description = document.getElementById('env-description').value;
             const isSecret = document.getElementById('env-secret').checked;
+            const triggerRedeploy = document.getElementById('env-redeploy').checked;
             
             try {
                 const res = await fetch(`${API_BASE}/api/env`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        projectName: project,
+                        projectId,
                         branch,
                         key,
                         value,
                         description,
-                        isSecret
+                        isSecret,
+                        triggerRedeploy
                     })
                 });
                 
                 const data = await res.json();
                 
                 if (data.success) {
-                    alert('✅ Environment variable saved successfully!');
+                    if (data.redeployed) {
+                        alert(`✅ Environment variable saved and redeployment queued!\nDeployment ID: ${data.deploymentId}`);
+                    } else {
+                        alert('✅ Environment variable saved successfully!');
+                    }
                     document.querySelector('div[style*="fixed"]').remove();
                     renderEnvironmentView();
                 } else {

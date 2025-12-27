@@ -78,11 +78,38 @@ db.serialize(() => {
     ON databases(status)
   `);
 
+  // Create projects table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS projects (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      gitlab_project_id TEXT,
+      repo_url TEXT NOT NULL,
+      default_branch TEXT DEFAULT 'production',
+      enabled_branches TEXT DEFAULT 'production,master,dev',
+      auto_deploy INTEGER DEFAULT 1,
+      status TEXT DEFAULT 'active',
+      description TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_projects_name 
+    ON projects(name)
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_projects_status 
+    ON projects(status)
+  `);
+
   // Create environment_variables table
   db.run(`
     CREATE TABLE IF NOT EXISTS environment_variables (
       id TEXT PRIMARY KEY,
-      project_name TEXT NOT NULL,
+      project_id TEXT NOT NULL,
       branch TEXT NOT NULL,
       key TEXT NOT NULL,
       value TEXT NOT NULL,
@@ -90,13 +117,14 @@ db.serialize(() => {
       description TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(project_name, branch, key)
+      UNIQUE(project_id, branch, key),
+      FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
     )
   `);
 
   db.run(`
     CREATE INDEX IF NOT EXISTS idx_env_vars_project_branch 
-    ON environment_variables(project_name, branch)
+    ON environment_variables(project_id, branch)
   `);
 });
 
@@ -201,22 +229,22 @@ function getDeploymentById(deploymentId) {
 /**
  * Save environment variable for a project
  */
-function saveEnvironmentVariable(projectName, branch, key, value, isSecret = false, description = '') {
+function saveEnvironmentVariable(projectId, branch, key, value, isSecret = false, description = '') {
   return new Promise((resolve, reject) => {
     const id = `env_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const timestamp = new Date().toISOString();
     
     db.run(
       `INSERT OR REPLACE INTO environment_variables 
-       (id, project_name, branch, key, value, is_secret, description, updated_at) 
+       (id, project_id, branch, key, value, is_secret, description, updated_at) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, projectName, branch, key, value, isSecret ? 1 : 0, description, timestamp],
+      [id, projectId, branch, key, value, isSecret ? 1 : 0, description, timestamp],
       (err) => {
         if (err) {
           logger.error('Error saving environment variable:', err);
           reject(err);
         } else {
-          resolve({ id, projectName, branch, key, isSecret, description });
+          resolve({ id, projectId, branch, key, isSecret, description });
         }
       }
     );
@@ -224,48 +252,55 @@ function saveEnvironmentVariable(projectName, branch, key, value, isSecret = fal
 }
 
 /**
- * Get environment variables for a project and branch
+ * Get environment variables for a project and branch (by project ID or name)
  */
-function getEnvironmentVariables(projectName, branch) {
+function getEnvironmentVariables(projectIdentifier, branch) {
   return new Promise((resolve, reject) => {
-    db.all(
-      `SELECT id, project_name, branch, key, value, is_secret, description, created_at, updated_at 
-       FROM environment_variables 
-       WHERE project_name = ? AND branch = ?
-       ORDER BY key ASC`,
-      [projectName, branch],
-      (err, rows) => {
-        if (err) {
-          logger.error('Error fetching environment variables:', err);
-          reject(err);
-        } else {
-          resolve(rows || []);
-        }
+    // Check if identifier is a project ID (starts with 'proj_') or name
+    const isId = projectIdentifier.startsWith('proj_');
+    const query = isId
+      ? `SELECT ev.* FROM environment_variables ev 
+         WHERE ev.project_id = ? AND ev.branch = ?
+         ORDER BY ev.key ASC`
+      : `SELECT ev.* FROM environment_variables ev
+         JOIN projects p ON ev.project_id = p.id
+         WHERE p.name = ? AND ev.branch = ?
+         ORDER BY ev.key ASC`;
+    
+    db.all(query, [projectIdentifier, branch], (err, rows) => {
+      if (err) {
+        logger.error('Error fetching environment variables:', err);
+        reject(err);
+      } else {
+        resolve(rows || []);
       }
-    );
+    });
   });
 }
 
 /**
- * Get all environment variables for a project (all branches)
+ * Get all environment variables for a project (all branches) (by project ID or name)
  */
-function getAllEnvironmentVariables(projectName) {
+function getAllEnvironmentVariables(projectIdentifier) {
   return new Promise((resolve, reject) => {
-    db.all(
-      `SELECT id, project_name, branch, key, value, is_secret, description, created_at, updated_at 
-       FROM environment_variables 
-       WHERE project_name = ?
-       ORDER BY branch ASC, key ASC`,
-      [projectName],
-      (err, rows) => {
-        if (err) {
-          logger.error('Error fetching all environment variables:', err);
-          reject(err);
-        } else {
-          resolve(rows || []);
-        }
+    const isId = projectIdentifier.startsWith('proj_');
+    const query = isId
+      ? `SELECT ev.* FROM environment_variables ev
+         WHERE ev.project_id = ?
+         ORDER BY ev.branch ASC, ev.key ASC`
+      : `SELECT ev.* FROM environment_variables ev
+         JOIN projects p ON ev.project_id = p.id
+         WHERE p.name = ?
+         ORDER BY ev.branch ASC, ev.key ASC`;
+    
+    db.all(query, [projectIdentifier], (err, rows) => {
+      if (err) {
+        logger.error('Error fetching all environment variables:', err);
+        reject(err);
+      } else {
+        resolve(rows || []);
       }
-    );
+    });
   });
 }
 
@@ -290,15 +325,156 @@ function deleteEnvironmentVariable(id) {
 }
 
 /**
- * Get environment variables as key-value object
+ * Get environment variables as key-value object (by project ID or name)
  */
-async function getEnvironmentVariablesAsObject(projectName, branch) {
-  const vars = await getEnvironmentVariables(projectName, branch);
+async function getEnvironmentVariablesAsObject(projectIdentifier, branch) {
+  const vars = await getEnvironmentVariables(projectIdentifier, branch);
   const envObj = {};
   vars.forEach(v => {
     envObj[v.key] = v.value;
   });
   return envObj;
+}
+
+/**
+ * Create a new project
+ */
+function createProject(projectData) {
+  return new Promise((resolve, reject) => {
+    const { name, repoUrl, defaultBranch, enabledBranches, autoDeploy, description, gitlabProjectId } = projectData;
+    const id = `proj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const timestamp = new Date().toISOString();
+    
+    db.run(
+      `INSERT INTO projects 
+       (id, name, repo_url, gitlab_project_id, default_branch, enabled_branches, auto_deploy, description, updated_at) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id, 
+        name, 
+        repoUrl, 
+        gitlabProjectId || null,
+        defaultBranch || 'production', 
+        enabledBranches || 'production,master,dev',
+        autoDeploy ? 1 : 0,
+        description || '',
+        timestamp
+      ],
+      (err) => {
+        if (err) {
+          logger.error('Error creating project:', err);
+          reject(err);
+        } else {
+          resolve({ id, name, repoUrl, defaultBranch, enabledBranches, autoDeploy, description });
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Get all projects
+ */
+function getAllProjects() {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT * FROM projects WHERE status = 'active' ORDER BY created_at DESC`,
+      [],
+      (err, rows) => {
+        if (err) {
+          logger.error('Error fetching projects:', err);
+          reject(err);
+        } else {
+          resolve(rows || []);
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Get project by ID
+ */
+function getProjectById(id) {
+  return new Promise((resolve, reject) => {
+    db.get(
+      'SELECT * FROM projects WHERE id = ?',
+      [id],
+      (err, row) => {
+        if (err) {
+          logger.error('Error fetching project:', err);
+          reject(err);
+        } else {
+          resolve(row);
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Get project by name
+ */
+function getProjectByName(name) {
+  return new Promise((resolve, reject) => {
+    db.get(
+      'SELECT * FROM projects WHERE name = ?',
+      [name],
+      (err, row) => {
+        if (err) {
+          logger.error('Error fetching project:', err);
+          reject(err);
+        } else {
+          resolve(row);
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Update project
+ */
+function updateProject(id, updates) {
+  return new Promise((resolve, reject) => {
+    const timestamp = new Date().toISOString();
+    const updatesWithTimestamp = { ...updates, updated_at: timestamp };
+    const fields = Object.keys(updatesWithTimestamp).map(key => `${key} = ?`).join(', ');
+    const values = Object.values(updatesWithTimestamp);
+
+    db.run(
+      `UPDATE projects SET ${fields} WHERE id = ?`,
+      [...values, id],
+      (err) => {
+        if (err) {
+          logger.error('Error updating project:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Delete project (soft delete)
+ */
+function deleteProject(id) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `UPDATE projects SET status = 'deleted' WHERE id = ?`,
+      [id],
+      (err) => {
+        if (err) {
+          logger.error('Error deleting project:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
 }
 
 module.exports = {
@@ -311,5 +487,11 @@ module.exports = {
   getAllEnvironmentVariables,
   deleteEnvironmentVariable,
   getEnvironmentVariablesAsObject,
+  createProject,
+  getAllProjects,
+  getProjectById,
+  getProjectByName,
+  updateProject,
+  deleteProject,
   db,
 };

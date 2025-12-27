@@ -2,7 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const { verifyWebhookSignature } = require('../utils/security');
 const { queueDeployment } = require('../services/deploymentQueue');
-const { logDeployment } = require('../services/database');
+const { logDeployment, getProjectByName } = require('../services/database');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -33,16 +33,42 @@ router.post('/gitlab', async (req, res) => {
     const { project, repository, ref, commits, user_name } = payload;
     const branch = ref ? ref.replace('refs/heads/', '') : null;
 
-    // Only deploy from main/master/dev branches
-    if (branch !== 'production' && branch !== 'master' && branch !== 'dev') {
-      logger.info(`Ignoring push to branch: ${branch}`);
-      return res.status(200).json({ message: 'Branch ignored' });
+    const projectName = project?.name || project?.path || repository?.name;
+    
+    // Check if project exists in database
+    const dbProject = await getProjectByName(projectName);
+    if (!dbProject) {
+      logger.warn(`Webhook received for unknown project: ${projectName}. Please add this project in the dashboard first.`);
+      return res.status(404).json({ 
+        error: 'Project not found',
+        message: 'Please add this project in the Vellaric-Signal dashboard before deploying',
+        project: projectName
+      });
+    }
+    
+    // Check if project has auto-deploy enabled
+    if (!dbProject.auto_deploy) {
+      logger.info(`Auto-deploy disabled for project: ${projectName}`);
+      return res.status(200).json({ 
+        message: 'Auto-deploy is disabled for this project. Use manual deployment from dashboard.' 
+      });
+    }
+    
+    // Check if branch is enabled for this project
+    const enabledBranches = dbProject.enabled_branches.split(',');
+    if (!enabledBranches.includes(branch)) {
+      logger.info(`Branch ${branch} not enabled for project ${projectName}. Enabled: ${dbProject.enabled_branches}`);
+      return res.status(200).json({ 
+        message: 'Branch not enabled for deployment',
+        branch,
+        enabledBranches: dbProject.enabled_branches
+      });
     }
 
     const deploymentData = {
-      projectName: project?.name || repository?.name,
+      projectName: dbProject.name,
       projectPath: project?.path_with_namespace || repository?.homepage,
-      repoUrl: repository?.git_http_url || repository?.url,
+      repoUrl: dbProject.repo_url,
       branch,
       commit: commits?.[0]?.id || 'unknown',
       commitMessage: commits?.[0]?.message || '',
@@ -50,7 +76,7 @@ router.post('/gitlab', async (req, res) => {
       timestamp: new Date().toISOString(),
     };
 
-    logger.info(`Received push event for ${deploymentData.projectName} on ${branch}`);
+    logger.info(`Received push event for ${dbProject.name} on ${branch}`);
 
     // Log deployment request
     await logDeployment(deploymentData);

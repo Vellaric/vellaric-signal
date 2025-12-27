@@ -5,6 +5,7 @@ const { Server } = require('socket.io');
 const path = require('path');
 const webhookRouter = require('./routes/webhook');
 const envRouter = require('./routes/env');
+const projectsRouter = require('./routes/projects');
 const { getDeploymentHistory } = require('./services/database');
 const { getQueueStatus } = require('./services/deploymentQueue');
 const { listDeployments, removeDeployment, cleanupDockerImages } = require('./services/cleanup');
@@ -48,6 +49,9 @@ app.use('/webhook', webhookRouter);
 
 // Protected routes - require authentication
 app.use(requireAuth);
+
+// Projects API (requires auth)
+app.use('/api/projects', projectsRouter);
 
 // Environment variables API (requires auth)
 app.use('/api/env', envRouter);

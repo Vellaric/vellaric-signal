@@ -4,7 +4,10 @@ const {
   getEnvironmentVariables,
   getAllEnvironmentVariables,
   deleteEnvironmentVariable,
+  getProjectById,
+  getProjectByName,
 } = require('../services/database');
+const { queueDeployment } = require('../services/deploymentQueue');
 const logger = require('../utils/logger');
 const { requireAuth } = require('../middleware/auth');
 
@@ -57,16 +60,30 @@ router.get('/:projectName', requireAuth, async (req, res) => {
 /**
  * Save or update environment variable
  * POST /api/env
- * Body: { projectName, branch, key, value, isSecret, description }
+ * Body: { projectName, projectId, branch, key, value, isSecret, description, triggerRedeploy }
  */
 router.post('/', requireAuth, async (req, res) => {
   try {
-    const { projectName, branch, key, value, isSecret, description } = req.body;
+    const { projectName, projectId, branch, key, value, isSecret, description, triggerRedeploy } = req.body;
+    
+    // Get project (support both projectId and projectName for backward compatibility)
+    let project = null;
+    if (projectId) {
+      project = await getProjectById(projectId);
+    } else if (projectName) {
+      project = await getProjectByName(projectName);
+    }
+    
+    if (!project) {
+      return res.status(404).json({ 
+        error: 'Project not found. Please add the project first.' 
+      });
+    }
     
     // Validate required fields
-    if (!projectName || !branch || !key || value === undefined) {
+    if (!branch || !key || value === undefined) {
       return res.status(400).json({ 
-        error: 'Missing required fields: projectName, branch, key, value' 
+        error: 'Missing required fields: branch, key, value' 
       });
     }
     
@@ -78,7 +95,7 @@ router.post('/', requireAuth, async (req, res) => {
     }
     
     const result = await saveEnvironmentVariable(
-      projectName,
+      project.id,
       branch,
       key,
       value,
@@ -86,7 +103,42 @@ router.post('/', requireAuth, async (req, res) => {
       description || ''
     );
     
-    logger.info(`Environment variable saved: ${projectName}/${branch}/${key}`);
+    logger.info(`Environment variable saved: ${project.name}/${branch}/${key}`);
+    
+    // Trigger redeployment if requested
+    if (triggerRedeploy) {
+      try {
+        const deploymentData = {
+          projectName: project.name,
+          projectPath: project.name,
+          repoUrl: project.repo_url,
+          branch,
+          commit: 'env-update',
+          commitMessage: `Environment variable updated: ${key}`,
+          author: req.session?.username || 'dashboard-user',
+          timestamp: new Date().toISOString(),
+        };
+        
+        const deploymentId = await queueDeployment(deploymentData);
+        logger.info(`Redeployment queued: ${deploymentId} (env var updated)`);
+        
+        return res.json({ 
+          success: true, 
+          data: result,
+          redeployed: true,
+          deploymentId 
+        });
+      } catch (deployError) {
+        logger.error('Error triggering redeployment:', deployError);
+        return res.json({ 
+          success: true, 
+          data: result,
+          redeployed: false,
+          redeployError: deployError.message
+        });
+      }
+    }
+    
     res.json({ success: true, data: result });
   } catch (error) {
     logger.error('Error saving environment variable:', error);

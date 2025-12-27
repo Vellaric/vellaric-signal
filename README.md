@@ -6,24 +6,39 @@
 
 GitLab webhook server for automated Docker deployments with HTTPS - similar to Digital Ocean App Platform.
 
-## Features
+## ✨ Features
 
-- 🔐 Secure GitLab webhook signature verification
-- 🚀 Automatic deployment on push to main/master/dev branches
-- 🐳 Docker image build and container orchestration
-- 🌐 Automatic subdomain creation with nginx reverse proxy
-- 🔒 Automatic HTTPS setup with Let's Encrypt
-- 🔄 Deployment queue with configurable concurrency
-- 📊 SQLite database for deployment history
-- 📝 Comprehensive logging
-- 🏥 Health check endpoint
+- 📦 **Project Management**: Add and manage multiple projects from GitLab
+- ⚙️ **Environment Variables**: Secure configuration management per project/branch
+- 🔐 **Webhook Integration**: Automatic deployment on Git push
+- 🚀 **Manual Deployment**: Trigger deployments from dashboard
+- 🐳 **Docker Orchestration**: Automatic image build and container management
+- 🌐 **Domain Management**: Automatic subdomain creation with nginx
+- 🔒 **SSL Certificates**: Automatic HTTPS setup with Let's Encrypt
+- 🔄 **Deployment Queue**: Configurable concurrent deployments
+- 📊 **Deployment History**: SQLite database with full audit trail
+- 🔴 **Real-time Updates**: WebSocket-based live deployment status
+- 📝 **Comprehensive Logging**: Detailed logs for debugging
+- 💾 **Database Management**: Built-in PostgreSQL container management
+- ☁️ **Backup System**: Automated database backups to Backblaze B2
+
+## 🎯 Workflow
+
+```
+1. Add Project     →  Connect GitLab repository to Signal
+2. Configure Env   →  Set environment variables per branch
+3. Deploy          →  Manual trigger or automatic on push
+4. Monitor         →  Real-time logs and status updates
+5. Update & Redeploy → Change env vars and redeploy
+```
 
 ## Architecture
 
 ```
-GitLab Push → Webhook → Pull Code → Build Docker → Start Container → Configure Nginx → Setup SSL
-                                                                          ↓
-                                                      subdomain.yourdomain.com (HTTPS)
+GitLab Push → Webhook → Verify Project → Pull Code → Build Docker → Start Container → Configure Nginx → Setup SSL
+                                ↓                                              ↓
+                       Check Environment Variables                 subdomain.yourdomain.com (HTTPS)
+                       Inject into Container
 ```
 
 ## Requirements
