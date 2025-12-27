@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSocket } from '../contexts/SocketContext';
 import { deploymentsAPI } from '../services/api';
-import { Clock, CheckCircle, XCircle, AlertCircle, FileText, Loader, Trash2, RefreshCw } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Loader, Trash2, FileText, ChevronDown, Plus } from 'lucide-react';
 
 export default function Deployments() {
   const [activeTab, setActiveTab] = useState('history');
@@ -13,32 +13,55 @@ export default function Deployments() {
   const [logs, setLogs] = useState('');
   const { socket } = useSocket();
 
+  // Initial load
   useEffect(() => {
     loadData();
-    
+  }, []);
+
+  // Live websocket updates
+  useEffect(() => {
     if (socket) {
-      socket.on('deployment:status', handleDeploymentUpdate);
-      socket.on('deployment:log', handleLogUpdate);
+      // Real-time deployment status updates
+      socket.on('deployment:status', (data) => {
+        console.log('Live deployment update:', data);
+        // Update specific deployment in state
+        setDeployments(prev => {
+          const updated = prev.map(d => 
+            d.id === data.deploymentId || d.project_name === data.projectName 
+              ? { ...d, ...data, status: data.status } 
+              : d
+          );
+          // Add new deployment if not exists
+          if (!prev.find(d => d.id === data.deploymentId)) {
+            return [...updated, data];
+          }
+          return updated;
+        });
+        
+        // Update queue
+        setQueue(prev => prev.filter(q => q.id !== data.deploymentId));
+      });
+
+      // Live log streaming
+      socket.on('deployment:log', (data) => {
+        if (selectedDeployment && data.deploymentId === selectedDeployment.id) {
+          setLogs(prev => prev + `\n${data.log.timestamp?.substring(11, 19) || ''} [${data.log.level}] ${data.log.message}`);
+        }
+      });
+
+      // Queue updates
+      socket.on('deployment:queued', (data) => {
+        console.log('New deployment queued:', data);
+        setQueue(prev => [...prev, data]);
+      });
+
+      return () => {
+        socket.off('deployment:status');
+        socket.off('deployment:log');
+        socket.off('deployment:queued');
+      };
     }
-
-    return () => {
-      if (socket) {
-        socket.off('deployment:status', handleDeploymentUpdate);
-        socket.off('deployment:log', handleLogUpdate);
-      }
-    };
-  }, [socket]);
-
-  const handleDeploymentUpdate = (data) => {
-    console.log('Deployment update:', data);
-    loadData();
-  };
-
-  const handleLogUpdate = (data) => {
-    if (selectedDeployment && data.deploymentId === selectedDeployment.id) {
-      setLogs(prev => prev + `\n${data.log.timestamp?.substring(11, 19) || ''} [${data.log.level}] ${data.log.message}`);
-    }
-  };
+  }, [socket, selectedDeployment]);
 
   const loadData = async () => {
     try {
@@ -107,87 +130,84 @@ export default function Deployments() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Droplets</h1>
-          <p className="text-[hsl(var(--muted-foreground))] mt-1 text-sm">
-            Monitor and manage your deployments
+          <h1 className="text-2xl font-semibold text-foreground">Droplets</h1>
+          <p className="text-muted-foreground mt-1 text-xs">
+            Monitor and manage your deployments in real-time
           </p>
         </div>
-        <button 
-          onClick={loadData} 
-          className="btn-primary flex items-center gap-2"
-          disabled={loading}
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
+        <button className="inline-flex items-center gap-2 px-3.5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md text-sm font-medium transition-colors">
+          <Plus className="w-4 h-4" />
+          Create
+          <ChevronDown className="w-3.5 h-3.5" />
         </button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-[hsl(var(--card))] p-6 rounded-lg border border-[hsl(var(--border))]">
+        <div className="bg-card p-5 rounded-lg border border-border">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">Total Deployments</p>
-              <p className="text-3xl font-bold text-[hsl(var(--foreground))] mt-1">{deployments.length}</p>
+              <p className="text-xs text-muted-foreground">Total Deployments</p>
+              <p className="text-2xl font-semibold text-foreground mt-1">{deployments.length}</p>
             </div>
-            <Clock className="w-8 h-8 text-[hsl(var(--muted-foreground))]" />
+            <Clock className="w-7 h-7 text-muted-foreground" />
           </div>
         </div>
         
-        <div className="bg-[hsl(var(--card))] p-6 rounded-lg border border-[hsl(var(--border))]">
+        <div className="bg-card p-5 rounded-lg border border-border">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">Active</p>
-              <p className="text-3xl font-bold text-[hsl(var(--success))] mt-1">{activeDeployments.length}</p>
+              <p className="text-xs text-muted-foreground">Active</p>
+              <p className="text-2xl font-semibold text-[hsl(var(--success))] mt-1">{activeDeployments.length}</p>
             </div>
-            <CheckCircle className="w-8 h-8 text-[hsl(var(--success))]" />
+            <CheckCircle className="w-7 h-7 text-[hsl(var(--success))]" />
           </div>
         </div>
         
-        <div className="bg-[hsl(var(--card))] p-6 rounded-lg border border-[hsl(var(--border))]">
+        <div className="bg-card p-5 rounded-lg border border-border">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">Queue</p>
-              <p className="text-3xl font-bold text-[hsl(var(--warning))] mt-1">{queue.length}</p>
+              <p className="text-xs text-muted-foreground">Queue</p>
+              <p className="text-2xl font-semibold text-[hsl(var(--warning))] mt-1">{queue.length}</p>
             </div>
-            <Loader className="w-8 h-8 text-[hsl(var(--warning))]" />
+            <Loader className="w-7 h-7 text-[hsl(var(--warning))]" />
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg">
-        <div className="flex gap-1 p-2 border-b border-[hsl(var(--border))]">
+      <div className="bg-card border border-border rounded-lg">
+        <div className="flex gap-1 p-1.5 border-b border-border">
           <button
             onClick={() => setActiveTab('history')}
-            className={`px-4 py-2 rounded font-medium text-sm transition-all ${
+            className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
               activeTab === 'history'
-                ? 'bg-[hsl(var(--primary))] text-white'
-                : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-foreground'
             }`}
           >
             History ({deployments.length})
           </button>
           <button
             onClick={() => setActiveTab('queue')}
-            className={`px-4 py-2 rounded font-medium text-sm transition-all ${
+            className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
               activeTab === 'queue'
-                ? 'bg-[hsl(var(--primary))] text-white'
-                : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-foreground'
             }`}
           >
             Queue ({queue.length})
           </button>
           <button
             onClick={() => setActiveTab('active')}
-            className={`px-4 py-2 rounded font-medium text-sm transition-all ${
+            className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
               activeTab === 'active'
-                ? 'bg-[hsl(var(--primary))] text-white'
-                : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))]'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-foreground'
             }`}
           >
             Active ({activeDeployments.length})
@@ -195,15 +215,15 @@ export default function Deployments() {
         </div>
 
         {/* Deployments List */}
-        <div className="divide-y divide-[hsl(var(--border))]">
+        <div className="divide-y divide-border">
           {filteredData.length === 0 ? (
             <div className="p-12 text-center">
-              <Clock className="mx-auto h-16 w-16 text-[hsl(var(--muted-foreground))] opacity-50" />
-              <h3 className="mt-4 text-lg font-semibold text-[hsl(var(--foreground))]">
+              <Clock className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
+              <h3 className="mt-4 text-sm font-medium text-foreground">
                 {activeTab === 'queue' ? 'No deployments in queue' :
                  activeTab === 'active' ? 'No active droplets' : 'No deployment history'}
               </h3>
-              <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Deploy a project to see it here
               </p>
             </div>
@@ -231,7 +251,6 @@ export default function Deployments() {
             setSelectedDeployment(null);
             setLogs('');
           }}
-          onRefresh={() => handleShowLogs(selectedDeployment)}
         />
       )}
     </div>
@@ -267,10 +286,10 @@ function DeploymentCard({ deployment, onShowLogs, onDelete, isActive }) {
     } else {
       return { 
         icon: Clock, 
-        color: 'text-[hsl(var(--muted-foreground))]', 
-        bg: 'bg-[hsl(var(--muted))]/50', 
+        color: 'text-muted-foreground', 
+        bg: 'bg-muted/50', 
         label: 'Queued',
-        dot: 'bg-[hsl(var(--muted-foreground))]'
+        dot: 'bg-muted-foreground'
       };
     }
   };
@@ -291,63 +310,63 @@ function DeploymentCard({ deployment, onShowLogs, onDelete, isActive }) {
   const StatusIcon = statusConfig.icon;
 
   return (
-    <div className="p-6 hover:bg-[hsl(var(--accent))] transition-colors">
+    <div className="p-5 hover:bg-accent/50 transition-colors">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4 flex-1">
           {/* Status Indicator */}
-          <div className={`w-3 h-3 rounded-full ${statusConfig.dot}`}></div>
+          <div className={`w-2 h-2 rounded-full ${statusConfig.dot}`}></div>
           
           {/* Project Info */}
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+            <div className="flex items-center gap-3 mb-1.5">
+              <h3 className="text-sm font-semibold text-foreground">
                 {deployment.project_name}
               </h3>
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${statusConfig.bg} ${statusConfig.color}`}>
-                <StatusIcon className="w-3.5 h-3.5" />
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${statusConfig.bg} ${statusConfig.color}`}>
+                <StatusIcon className="w-3 h-3" />
                 {statusConfig.label}
               </span>
             </div>
             
-            <div className="flex items-center gap-6 text-sm text-[hsl(var(--muted-foreground))]">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-5 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
                 <span className="font-medium">Region:</span>
-                <span className="font-mono text-xs bg-[hsl(var(--muted))] px-2 py-0.5 rounded">
+                <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-[10px]">
                   {deployment.region || 'NYC3'}
                 </span>
               </div>
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <span className="font-medium">Branch:</span>
-                <span className="font-mono text-xs bg-[hsl(var(--muted))] px-2 py-0.5 rounded">
+                <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-[10px]">
                   {deployment.branch || 'main'}
                 </span>
               </div>
               
               {deployment.commit && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <span className="font-medium">Commit:</span>
-                  <code className="font-mono text-xs bg-[hsl(var(--muted))] px-2 py-0.5 rounded">
+                  <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-[10px]">
                     {deployment.commit.substring(0, 8)}
                   </code>
                 </div>
               )}
               
               {deployment.domain && deployment.domain !== 'Pending...' && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <span className="font-medium">Domain:</span>
                   <a 
                     href={`https://${deployment.domain}`} 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="text-[hsl(var(--primary))] hover:underline font-mono text-xs"
+                    className="text-primary hover:underline font-mono text-[10px]"
                   >
                     {deployment.domain}
                   </a>
                 </div>
               )}
               
-              <div className="ml-auto text-xs">
+              <div className="ml-auto text-[10px]">
                 {formatTime(deployment.created_at || deployment.updated_at || deployment.queuedAt)}
               </div>
             </div>
@@ -359,19 +378,19 @@ function DeploymentCard({ deployment, onShowLogs, onDelete, isActive }) {
           {deployment.id && (
             <button
               onClick={() => onShowLogs(deployment)}
-              className="p-2 rounded-lg bg-[hsl(var(--secondary))] hover:bg-[hsl(220,16%,20%)] text-[hsl(var(--foreground))] transition-colors"
+              className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground transition-colors"
               title="View Logs"
             >
-              <FileText className="w-4 h-4" />
+              <FileText className="w-3.5 h-3.5" />
             </button>
           )}
           {isActive && (
             <button
               onClick={() => onDelete(deployment.project_name, deployment.branch)}
-              className="p-2 rounded-lg bg-[hsl(var(--destructive))]/10 hover:bg-[hsl(var(--destructive))]/20 text-[hsl(var(--destructive))] transition-colors"
+              className="p-1.5 rounded bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors"
               title="Delete Deployment"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
@@ -380,39 +399,37 @@ function DeploymentCard({ deployment, onShowLogs, onDelete, isActive }) {
   );
 }
 
-function LogsModal({ deployment, logs, onClose, onRefresh }) {
+function LogsModal({ deployment, logs, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-      <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg max-w-5xl w-full max-h-[85vh] flex flex-col shadow-2xl">
-        <div className="flex items-center justify-between p-6 border-b border-[hsl(var(--border))]">
+      <div className="bg-card border border-border rounded-lg max-w-5xl w-full max-h-[85vh] flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between p-5 border-b border-border">
           <div>
-            <h2 className="text-xl font-bold text-[hsl(var(--foreground))]">
+            <h2 className="text-lg font-semibold text-foreground">
               Deployment Logs
             </h2>
-            <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {deployment.project_name} • {deployment.branch || 'main'}
             </p>
           </div>
           <button 
             onClick={onClose} 
-            className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
-            <XCircle className="w-6 h-6" />
+            <XCircle className="w-5 h-5" />
           </button>
         </div>
         
-        <div className="flex-1 overflow-auto p-6">
-          <pre className="bg-[hsl(220,20%,5%)] text-gray-100 p-6 rounded-lg overflow-auto font-mono text-xs leading-relaxed border border-[hsl(var(--border))]">
+        <div className="flex-1 overflow-auto p-5">
+          <pre className="bg-[hsl(220,20%,5%)] text-gray-100 p-5 rounded-lg overflow-auto font-mono text-[10px] leading-relaxed border border-border">
             {logs || 'No logs available'}
           </pre>
         </div>
         
-        <div className="flex gap-3 justify-end p-6 border-t border-[hsl(var(--border))]">
-          <button onClick={onRefresh} className="btn-secondary flex items-center gap-2">
-            <RefreshCw className="w-4 h-4" />
-            Refresh
+        <div className="flex gap-2 justify-end p-5 border-t border-border">
+          <button onClick={onClose} className="px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded text-xs font-medium transition-colors">
+            Close
           </button>
-          <button onClick={onClose} className="btn-primary">Close</button>
         </div>
       </div>
     </div>
