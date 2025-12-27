@@ -211,7 +211,17 @@ class DeploymentQueue {
       const port = await this.findAvailablePort(3000 + Math.floor(Math.random() * 1000));
       
       // Get environment variables from database
+      logger.info(`Fetching environment variables for project: "${projectName}", branch: "${branch}"`);
       const envVarsFromDb = await getEnvironmentVariablesAsObject(projectName, branch);
+      logger.info(`Fetched ${Object.keys(envVarsFromDb).length} environment variables from database`);
+      
+      // Log the variables (masked for secrets)
+      Object.keys(envVarsFromDb).forEach(key => {
+        const value = key.toLowerCase().includes('secret') || key.toLowerCase().includes('password') || key.toLowerCase().includes('key') 
+          ? '***MASKED***' 
+          : envVarsFromDb[key];
+        logger.info(`  - ${key} = ${value}`);
+      });
       
       // Check if project has .env file
       const envFilePath = path.join(deployPath, '.env');
@@ -234,6 +244,7 @@ class DeploymentQueue {
       
       await fs.writeFile(tempEnvPath, envFileContent);
       logStep(`📝 Created environment file with ${Object.keys(containerEnvVars).length} variables`);
+      logger.info(`📄 Environment file content preview:\n${envFileContent.split('\n').slice(0, 5).join('\n')}${envFileContent.split('\n').length > 5 ? '\n...' : ''}`);
       
       if (hasEnvFile) {
         logger.info(`Project has .env file, but using database environment variables (${Object.keys(envVarsFromDb).length} vars)`);
