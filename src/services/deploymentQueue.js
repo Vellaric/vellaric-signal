@@ -265,10 +265,6 @@ class DeploymentQueue {
       logStep(`📝 Created environment file with ${Object.keys(containerEnvVars).length} variables`);
       logger.info(`📄 Environment file content preview:\n${envFileContent.split('\n').slice(0, 5).join('\n')}${envFileContent.split('\n').length > 5 ? '\n...' : ''}`);
       
-      if (hasEnvFile) {
-        logger.info(`Project has .env file, but using database environment variables (${Object.keys(envVarsFromDb).length} vars)`);
-      }
-      
       // Start new container with environment variables
       logStep(`🚀 Starting container: ${containerName} on port ${port}`);
       await execAsync(`docker run -d --name ${containerName} --restart unless-stopped -p ${port}:${appPort} --env-file "${tempEnvPath}" ${dockerImageName}:${branch}`);
