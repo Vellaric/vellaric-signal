@@ -141,6 +141,17 @@ db.serialize(() => {
     CREATE INDEX IF NOT EXISTS idx_env_vars_project_branch 
     ON environment_variables(project_id, branch)
   `);
+
+  // Create admin_users table for authentication
+  db.run(`
+    CREATE TABLE IF NOT EXISTS admin_users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
   
   // Run migrations after schema is set up
   runMigrationsIfNeeded();
@@ -495,6 +506,68 @@ function deleteProject(id) {
   });
 }
 
+/**
+ * Get admin user by username
+ */
+function getAdminUser(username) {
+  return new Promise((resolve, reject) => {
+    db.get(
+      'SELECT * FROM admin_users WHERE username = ?',
+      [username],
+      (err, row) => {
+        if (err) {
+          logger.error('Error fetching admin user:', err);
+          reject(err);
+        } else {
+          resolve(row);
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Create admin user with hashed password
+ */
+function createAdminUser(username, passwordHash) {
+  return new Promise((resolve, reject) => {
+    const timestamp = new Date().toISOString();
+    db.run(
+      'INSERT INTO admin_users (username, password_hash, updated_at) VALUES (?, ?, ?)',
+      [username, passwordHash, timestamp],
+      function(err) {
+        if (err) {
+          logger.error('Error creating admin user:', err);
+          reject(err);
+        } else {
+          resolve({ id: this.lastID, username });
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Update admin user password
+ */
+function updateAdminPassword(username, passwordHash) {
+  return new Promise((resolve, reject) => {
+    const timestamp = new Date().toISOString();
+    db.run(
+      'UPDATE admin_users SET password_hash = ?, updated_at = ? WHERE username = ?',
+      [passwordHash, timestamp, username],
+      (err) => {
+        if (err) {
+          logger.error('Error updating admin password:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+}
+
 module.exports = {
   logDeployment,
   updateDeploymentStatus,
@@ -512,5 +585,8 @@ module.exports = {
   updateProject,
   deleteProject,
   getAllProjects,
+  getAdminUser,
+  createAdminUser,
+  updateAdminPassword,
   db,
 };

@@ -729,13 +729,10 @@
                 const modal = event.target.closest('div[style*=fixed]');
                 modal.innerHTML = `
                     <div style="background: var(--bg-secondary); padding: 32px; border-radius: 12px; max-width: 450px; width: 90%; text-align: center;">
-                        <h2 style="margin-bottom: 16px;">⚠️ Manual Update Required</h2>
-                        <p style="margin-bottom: 24px; color: var(--text-secondary);">To complete the password change:</p>
-                        <ol style="text-align: left; margin-bottom: 24px; padding-left: 24px; color: var(--text-secondary);">
-                            <li style="margin-bottom: 8px;">Update <code style="background: var(--bg-primary); padding: 2px 6px; border-radius: 4px;">ADMIN_PASSWORD</code> in your <code style="background: var(--bg-primary); padding: 2px 6px; border-radius: 4px;">.env</code> file with: <code style="background: var(--bg-primary); padding: 2px 6px; border-radius: 4px;">${newPassword}</code></li>
-                            <li style="margin-bottom: 8px;">Restart Signal server: <code style="background: var(--bg-primary); padding: 2px 6px; border-radius: 4px;">systemctl restart vellaric-signal</code></li>
-                        </ol>
-                        <button class="btn btn-primary" onclick="this.closest('div[style*=fixed]').remove()">Got it</button>
+                        <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+                        <h2 style="margin-bottom: 16px; color: var(--status-success);">Password Changed</h2>
+                        <p style="margin-bottom: 24px; color: var(--text-secondary);">Your password has been updated successfully. Please use your new password the next time you log in.</p>
+                        <button class="btn btn-primary" onclick="this.closest('div[style*=fixed]').remove()">Done</button>
                     </div>
                 `;
             } catch (err) {

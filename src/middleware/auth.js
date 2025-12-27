@@ -1,5 +1,28 @@
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
+const { getAdminUser, createAdminUser } = require('../services/database');
+const logger = require('../utils/logger');
+
+// Initialize default admin user if not exists
+async function initializeDefaultAdmin() {
+  try {
+    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin';
+    
+    const existingUser = await getAdminUser(adminUsername);
+    
+    if (!existingUser) {
+      const passwordHash = await bcrypt.hash(adminPassword, 10);
+      await createAdminUser(adminUsername, passwordHash);
+      logger.info(`Default admin user created: ${adminUsername}`);
+    }
+  } catch (err) {
+    logger.error('Error initializing default admin:', err);
+  }
+}
+
+// Initialize on module load
+initializeDefaultAdmin();
 
 // Session middleware configuration
 const sessionMiddleware = session({
@@ -32,21 +55,30 @@ function requireAuth(req, res, next) {
 async function handleLogin(req, res) {
   const { username, password } = req.body;
   
-  const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin'; // Default for development
-  
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password required' });
   }
   
-  // Simple comparison (in production, use bcrypt for hashed passwords)
-  if (username === adminUsername && password === adminPassword) {
+  try {
+    const user = await getAdminUser(username);
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
     req.session.authenticated = true;
     req.session.username = username;
     return res.json({ success: true });
+  } catch (err) {
+    logger.error('Login error:', err);
+    return res.status(500).json({ error: 'Login failed' });
   }
-  
-  res.status(401).json({ error: 'Invalid credentials' });
 }
 
 // Logout handler
@@ -83,19 +115,36 @@ async function handleChangePassword(req, res) {
     return res.status(400).json({ error: 'New password must be at least 6 characters' });
   }
 
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin';
-  
-  // Verify current password
-  if (currentPassword !== adminPassword) {
-    return res.status(401).json({ error: 'Current password is incorrect' });
+  try {
+    const username = req.session.username;
+    const user = await getAdminUser(username);
+    
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    // Verify current password
+    const passwordMatch = await bcrypt.compare(currentPassword, user.password_hash);
+    
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    
+    // Hash and update new password
+    const { updateAdminPassword } = require('../services/database');
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    await updateAdminPassword(username, newPasswordHash);
+    
+    logger.info(`Password changed for user: ${username}`);
+    
+    return res.json({ 
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (err) {
+    logger.error('Password change error:', err);
+    return res.status(500).json({ error: 'Failed to change password' });
   }
-
-  // In production, you should update this in a database or config file
-  // For now, we'll just update the environment variable (requires restart)
-  return res.status(501).json({ 
-    error: 'Password change requires updating ADMIN_PASSWORD in .env file and restarting the server',
-    message: 'Please update ADMIN_PASSWORD in your .env file with the new password and restart Signal'
-  });
 }
 
 module.exports = {
