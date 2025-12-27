@@ -104,7 +104,7 @@ class DeploymentQueue {
   }
 
   async deploy(deployment) {
-    const { id, projectName, repoUrl, branch, commit } = deployment;
+    const { id, projectId, projectName, repoUrl, branch, commit } = deployment;
     
     const logStep = (message) => {
       logger.info(message);
@@ -118,6 +118,7 @@ class DeploymentQueue {
     }
     
     logStep(`Starting deployment: ${id}`);
+    logger.info(`🔍 Deployment details - ProjectID: "${projectId}", Project: "${projectName}", Branch: "${branch}", Repo: ${repoUrl}`);
     await updateDeploymentStatus(id, 'building');
     
     // Emit real-time update
@@ -211,8 +212,8 @@ class DeploymentQueue {
       const port = await this.findAvailablePort(3000 + Math.floor(Math.random() * 1000));
       
       // Get environment variables from database
-      logger.info(`Fetching environment variables for project: "${projectName}", branch: "${branch}"`);
-      const envVarsFromDb = await getEnvironmentVariablesAsObject(projectName, branch);
+      logger.info(`Fetching environment variables for projectId: "${projectId}", projectName: "${projectName}", branch: "${branch}"`);
+      const envVarsFromDb = await getEnvironmentVariablesAsObject(projectId || projectName, branch);
       logger.info(`Fetched ${Object.keys(envVarsFromDb).length} environment variables from database`);
       
       // Log the variables (masked for secrets)

@@ -206,6 +206,7 @@ router.post('/:id/deploy', requireAuth, async (req, res) => {
     
     // Queue deployment
     const deploymentData = {
+      projectId: project.id,
       projectName: project.name,
       projectPath: project.name,
       repoUrl: project.repo_url,

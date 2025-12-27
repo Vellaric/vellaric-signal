@@ -85,6 +85,7 @@ router.post('/gitlab', async (req, res) => {
     }
 
     const deploymentData = {
+      projectId: dbProject.id,
       projectName: dbProject.name,
       projectPath: project?.path_with_namespace || repository?.homepage,
       repoUrl: dbProject.repo_url,
