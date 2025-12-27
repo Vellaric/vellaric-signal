@@ -133,8 +133,8 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Dashboard</h1>
-        <p className="text-gray-600 dark:text-gray-400">Welcome back, John. Here's what's happening with your infrastructure.</p>
+        <h1 className="text-3xl font-bold text-[hsl(var(--foreground))] mb-2">Dashboard</h1>
+        <p className="text-[hsl(var(--muted-foreground))]">Welcome back, John. Here's what's happening with your infrastructure.</p>
       </div>
 
       {/* Stats Grid */}
@@ -175,7 +175,7 @@ export default function Dashboard() {
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
+        <h2 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <QuickActionCard
             title="Deploy Droplet"
@@ -221,10 +221,10 @@ export default function Dashboard() {
         {/* Your Resources */}
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Your Resources</h2>
+            <h2 className="text-lg font-semibold text-[hsl(var(--foreground))]">Your Resources</h2>
             <button
               onClick={() => navigate('/projects')}
-              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+              className="text-sm text-[hsl(var(--primary))] hover:text-[hsl(211,100%,45%)]"
             >
               View all →
             </button>
@@ -233,10 +233,10 @@ export default function Dashboard() {
             {recentDeployments.length === 0 ? (
               <div className="card text-center py-12">
                 <Package className="w-12 h-12 mx-auto text-gray-400 mb-3" />
-                <p className="text-gray-600 dark:text-gray-400">No resources yet</p>
+                <p className="text-[hsl(var(--muted-foreground))]">No resources yet</p>
                 <button
                   onClick={() => navigate('/projects')}
-                  className="mt-4 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700"
+                  className="mt-4 text-sm text-[hsl(var(--primary))] hover:text-blue-700"
                 >
                   Deploy your first app
                 </button>
@@ -251,11 +251,11 @@ export default function Dashboard() {
 
         {/* Recent Activity */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h2>
+          <h2 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-4">Recent Activity</h2>
           <div className="card">
             <div className="space-y-4">
               {recentActivity.length === 0 ? (
-                <p className="text-gray-600 dark:text-gray-400 text-sm text-center py-4">No recent activity</p>
+                <p className="text-[hsl(var(--muted-foreground))] text-sm text-center py-4">No recent activity</p>
               ) : (
                 recentActivity.map((activity) => (
                   <ActivityItem key={activity.id} activity={activity} formatTimeAgo={formatTimeAgo} />
@@ -271,8 +271,8 @@ export default function Dashboard() {
 
 function StatCard({ title, value, subtitle, icon, trend, color }) {
   const colors = {
-    blue: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-    green: 'bg-green-500/10 text-green-600 dark:text-green-400',
+    blue: 'bg-blue-500/10 text-[hsl(var(--primary))]',
+    green: 'bg-green-500/10 text-[hsl(var(--success))]',
     purple: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
     orange: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
   };
@@ -285,15 +285,15 @@ function StatCard({ title, value, subtitle, icon, trend, color }) {
         <div className={`p-3 rounded-xl ${colors[color]}`}>
           {icon}
         </div>
-        <div className={`flex items-center gap-1 text-sm font-semibold ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+        <div className={`flex items-center gap-1 text-sm font-semibold ${isPositive ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--destructive))]'}`}>
           {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
           {Math.abs(trend)}%
         </div>
       </div>
-      <h3 className="text-gray-600 dark:text-gray-400 text-sm font-medium mb-1">
+      <h3 className="text-[hsl(var(--muted-foreground))] text-sm font-medium mb-1">
         {title}
       </h3>
-      <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+      <p className="text-3xl font-bold text-[hsl(var(--foreground))] mb-1">
         {value}
       </p>
       <p className="text-xs text-gray-500 dark:text-gray-500">
@@ -310,11 +310,11 @@ function QuickActionCard({ title, subtitle, icon, onClick }) {
       className="card hover:shadow-lg hover:scale-105 transition-all text-left group"
     >
       <div className="flex flex-col items-center text-center gap-3">
-        <div className="p-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 group-hover:bg-blue-500/10 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+        <div className="p-3 rounded-xl bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] group-hover:bg-blue-500/10 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
           {icon}
         </div>
         <div>
-          <p className="font-semibold text-sm text-gray-900 dark:text-white mb-1">{title}</p>
+          <p className="font-semibold text-sm text-[hsl(var(--foreground))] mb-1">{title}</p>
           <p className="text-xs text-gray-500 dark:text-gray-500">{subtitle}</p>
         </div>
       </div>
@@ -330,10 +330,10 @@ function ResourceCard({ deployment }) {
   const isFailed = deployment.status === 'failed';
 
   const statusConfig = {
-    running: { color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10', label: 'Running', icon: CheckCircle },
-    stopped: { color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-500/10', label: 'Stopped', icon: Activity },
-    building: { color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-500/10', label: 'Building', icon: Clock },
-    failed: { color: 'text-red-600 dark:text-red-400', bg: 'bg-red-500/10', label: 'Failed', icon: AlertCircle },
+    running: { color: 'text-[hsl(var(--success))]', bg: 'bg-green-500/10', label: 'Running', icon: CheckCircle },
+    stopped: { color: 'text-[hsl(var(--muted-foreground))]', bg: 'bg-gray-500/10', label: 'Stopped', icon: Activity },
+    building: { color: 'text-[hsl(var(--warning))]', bg: 'bg-yellow-500/10', label: 'Building', icon: Clock },
+    failed: { color: 'text-[hsl(var(--destructive))]', bg: 'bg-red-500/10', label: 'Failed', icon: AlertCircle },
   };
 
   let status = 'stopped';
@@ -348,11 +348,11 @@ function ResourceCard({ deployment }) {
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-4 flex-1">
           <div className="p-3 rounded-xl bg-blue-500/10">
-            <Server className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <Server className="w-5 h-5 text-[hsl(var(--primary))]" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+              <h3 className="font-semibold text-[hsl(var(--foreground))] truncate">
                 {deployment.project_name}
               </h3>
               <span className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusConfig[status].bg} ${statusConfig[status].color}`}>
@@ -360,15 +360,15 @@ function ResourceCard({ deployment }) {
                 {statusConfig[status].label}
               </span>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <p className="text-sm text-[hsl(var(--muted-foreground))] mb-2">
               Droplet • Ubuntu 22.04
             </p>
             <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
-              <span>Region: <strong className="text-gray-700 dark:text-gray-300">{deployment.branch || 'NYC3'}</strong></span>
+              <span>Region: <strong className="text-[hsl(var(--foreground))]">{deployment.branch || 'NYC3'}</strong></span>
               {deployment.domain && (
                 <>
                   <span>•</span>
-                  <span>IP: <strong className="text-gray-700 dark:text-gray-300">{deployment.domain}</strong></span>
+                  <span>IP: <strong className="text-[hsl(var(--foreground))]">{deployment.domain}</strong></span>
                 </>
               )}
             </div>
@@ -382,7 +382,7 @@ function ResourceCard({ deployment }) {
         {deployment.domain && isRunning && (
           <button
             onClick={() => window.open(`https://${deployment.domain}`, '_blank')}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-[hsl(var(--muted-foreground))] hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             title="Open Site"
           >
             <ExternalLink className="w-4 h-4" />
@@ -395,10 +395,10 @@ function ResourceCard({ deployment }) {
 
 function ActivityItem({ activity, formatTimeAgo }) {
   const iconConfig = {
-    success: { icon: CheckCircle, color: 'text-green-600 dark:text-green-400' },
-    error: { icon: AlertCircle, color: 'text-red-600 dark:text-red-400' },
-    warning: { icon: Clock, color: 'text-yellow-600 dark:text-yellow-400' },
-    info: { icon: Activity, color: 'text-blue-600 dark:text-blue-400' },
+    success: { icon: CheckCircle, color: 'text-[hsl(var(--success))]' },
+    error: { icon: AlertCircle, color: 'text-[hsl(var(--destructive))]' },
+    warning: { icon: Clock, color: 'text-[hsl(var(--warning))]' },
+    info: { icon: Activity, color: 'text-[hsl(var(--primary))]' },
   };
 
   const config = iconConfig[activity.type] || iconConfig.info;
@@ -410,7 +410,7 @@ function ActivityItem({ activity, formatTimeAgo }) {
         <Icon className="w-4 h-4" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-gray-900 dark:text-white">{activity.message}</p>
+        <p className="text-sm text-[hsl(var(--foreground))]">{activity.message}</p>
         <p className="text-xs text-gray-500 dark:text-gray-500 flex items-center gap-1 mt-1">
           <Clock className="w-3 h-3" />
           {formatTimeAgo(activity.timestamp)}

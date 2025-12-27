@@ -62,8 +62,8 @@ export default function EnvironmentVariables() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Environment Variables</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Configure environment variables for your projects</p>
+          <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Environment Variables</h1>
+          <p className="text-[hsl(var(--muted-foreground))] mt-2">Configure environment variables for your projects</p>
         </div>
         <button
           onClick={() => {
@@ -83,26 +83,26 @@ export default function EnvironmentVariables() {
 
       <div className="card overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <thead className="bg-[hsl(var(--muted))] border-b border-[hsl(var(--border))]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Project</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Branch</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Key</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Value</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Project</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Branch</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Key</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Value</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Type</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className="bg-[hsl(var(--card))] divide-y divide-[hsl(var(--border))]">
             {envVars.length === 0 ? (
               <tr>
                 <td colSpan="6" className="px-6 py-12">
                   <div className="text-center">
                     <Key className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                    <h3 className="mt-2 text-sm font-medium text-[hsl(var(--foreground))]">
                       {projects.length === 0 ? 'No projects found' : 'No environment variables configured'}
                     </h3>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
                       {projects.length === 0 
                         ? 'Add a project first to configure environment variables' 
                         : 'Add environment variables to configure your applications'}
@@ -118,19 +118,19 @@ export default function EnvironmentVariables() {
               </tr>
             ) : (
               envVars.map((env) => (
-                <tr key={env.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <tr key={env.id} className="hover:bg-[hsl(var(--accent))]">
                   <td className="px-6 py-4">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">{env.project_name}</span>
+                    <span className="text-sm font-medium text-[hsl(var(--foreground))]">{env.project_name}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{env.branch}</code>
+                    <code className="text-xs bg-[hsl(var(--muted))] px-2 py-1 rounded">{env.branch}</code>
                   </td>
                   <td className="px-6 py-4">
-                    <code className="text-sm text-blue-600 dark:text-blue-400">{env.key}</code>
+                    <code className="text-sm text-[hsl(var(--primary))]">{env.key}</code>
                   </td>
                   <td className="px-6 py-4">
                     <div>
-                      <code className="text-xs text-gray-600 dark:text-gray-400">{env.is_secret ? '••••••••' : env.value}</code>
+                      <code className="text-xs text-[hsl(var(--muted-foreground))]">{env.is_secret ? '••••••••' : env.value}</code>
                       {env.description && (
                         <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">{env.description}</div>
                       )}
@@ -138,7 +138,7 @@ export default function EnvironmentVariables() {
                   </td>
                   <td className="px-6 py-4">
                     {env.is_secret ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[hsl(var(--destructive))/10] text-red-800 dark:text-red-400">
                         <Lock className="w-3 h-3 mr-1" />
                         Secret
                       </span>
@@ -152,7 +152,7 @@ export default function EnvironmentVariables() {
                   <td className="px-6 py-4 text-sm font-medium">
                     <button
                       onClick={() => handleDelete(env.id, env.project_name, env.key)}
-                      className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                      className="text-[hsl(var(--destructive))] hover:text-red-700"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -204,11 +204,11 @@ function AddEnvVarModal({ projects, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Add Environment Variable</h2>
+      <div className="bg-[hsl(var(--card))] rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <h2 className="text-2xl font-bold text-[hsl(var(--foreground))] mb-6">Add Environment Variable</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Project *</label>
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Project *</label>
             <select required value={formData.projectId} onChange={(e) => handleProjectChange(e.target.value)} className="input">
               <option value="">Select project</option>
               {projects.map((p) => (
@@ -217,7 +217,7 @@ function AddEnvVarModal({ projects, onClose, onSuccess }) {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Branch *</label>
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Branch *</label>
             <select required value={formData.branch} onChange={(e) => setFormData({...formData, branch: e.target.value})} className="input" disabled={!formData.projectId}>
               <option value="">Select project first</option>
               {branches.map((b) => (
@@ -226,24 +226,24 @@ function AddEnvVarModal({ projects, onClose, onSuccess }) {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Key * <span className="text-gray-500 text-xs">(e.g., NODE_ENV, DATABASE_URL)</span></label>
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Key * <span className="text-gray-500 text-xs">(e.g., NODE_ENV, DATABASE_URL)</span></label>
             <input type="text" required pattern="[A-Z_][A-Z0-9_]*" placeholder="NODE_ENV" value={formData.key} onChange={(e) => setFormData({...formData, key: e.target.value.toUpperCase()})} className="input" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Value *</label>
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Value *</label>
             <textarea required rows="3" placeholder="production" value={formData.value} onChange={(e) => setFormData({...formData, value: e.target.value})} className="input font-mono" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description <span className="text-gray-500 text-xs">(optional)</span></label>
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Description <span className="text-gray-500 text-xs">(optional)</span></label>
             <input type="text" placeholder="Environment mode for the application" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="input" />
           </div>
           <div className="flex items-center">
             <input type="checkbox" id="isSecret" checked={formData.isSecret} onChange={(e) => setFormData({...formData, isSecret: e.target.checked})} className="h-4 w-4 text-blue-600 rounded" />
-            <label htmlFor="isSecret" className="ml-2 text-sm text-gray-700 dark:text-gray-300">🔒 Mark as secret (value will be masked)</label>
+            <label htmlFor="isSecret" className="ml-2 text-sm text-[hsl(var(--foreground))]">🔒 Mark as secret (value will be masked)</label>
           </div>
           <div className="flex items-center">
             <input type="checkbox" id="triggerRedeploy" checked={formData.triggerRedeploy} onChange={(e) => setFormData({...formData, triggerRedeploy: e.target.checked})} className="h-4 w-4 text-blue-600 rounded" />
-            <label htmlFor="triggerRedeploy" className="ml-2 text-sm text-gray-700 dark:text-gray-300">🚀 Redeploy after saving (applies changes immediately)</label>
+            <label htmlFor="triggerRedeploy" className="ml-2 text-sm text-[hsl(var(--foreground))]">🚀 Redeploy after saving (applies changes immediately)</label>
           </div>
           <div className="flex gap-3 justify-end pt-4">
             <button type="button" onClick={onClose} className="btn">Cancel</button>

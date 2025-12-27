@@ -85,8 +85,8 @@ export default function Databases() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Databases</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Manage PostgreSQL databases</p>
+          <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Databases</h1>
+          <p className="text-[hsl(var(--muted-foreground))] mt-2">Manage PostgreSQL databases</p>
         </div>
         <button onClick={() => setShowCreateModal(true)} className="btn-primary flex items-center gap-2">
           <Plus className="w-4 h-4" />
@@ -96,24 +96,24 @@ export default function Databases() {
 
       <div className="card overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <thead className="bg-[hsl(var(--muted))] border-b border-[hsl(var(--border))]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Environment</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Connection</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stats</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Environment</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Connection</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Stats</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className="bg-[hsl(var(--card))] divide-y divide-[hsl(var(--border))]">
             {databases.length === 0 ? (
               <tr>
                 <td colSpan="6" className="px-6 py-12">
                   <div className="text-center">
                     <Database className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No databases</h3>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Create your first PostgreSQL database</p>
+                    <h3 className="mt-2 text-sm font-medium text-[hsl(var(--foreground))]">No databases</h3>
+                    <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Create your first PostgreSQL database</p>
                     <button onClick={() => setShowCreateModal(true)} className="btn-primary mt-4">
                       <Plus className="w-4 h-4 mr-2" />
                       Create Database
@@ -123,17 +123,17 @@ export default function Databases() {
               </tr>
             ) : (
               databases.map((db) => (
-                <tr key={db.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <tr key={db.id} className="hover:bg-[hsl(var(--accent))]">
                   <td className="px-6 py-4">
                     <div>
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">{db.name}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">{db.container_name}</div>
+                      <div className="text-sm font-medium text-[hsl(var(--foreground))]">{db.name}</div>
+                      <div className="text-xs text-[hsl(var(--muted-foreground))]">{db.container_name}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       db.environment === 'production' 
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
+                        ? 'bg-[hsl(var(--success))/10] text-green-800 dark:text-green-400'
                         : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
                     }`}>
                       {db.environment}
@@ -147,14 +147,14 @@ export default function Databases() {
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       db.stats.status === 'running'
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-400'
+                        ? 'bg-[hsl(var(--success))/10] text-green-800 dark:text-green-400'
+                        : 'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]'
                     }`}>
                       <Activity className="w-3 h-3 mr-1" />
                       {db.stats.status || 'unknown'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-xs text-gray-600 dark:text-gray-400">
+                  <td className="px-6 py-4 text-xs text-[hsl(var(--muted-foreground))]">
                     {db.stats.status === 'running' ? (
                       <div className="space-y-1">
                         <div className="flex items-center gap-1">
@@ -172,7 +172,7 @@ export default function Databases() {
                     <div className="flex items-center gap-2">
                       {db.stats.status === 'running' ? (
                         <>
-                          <button onClick={() => handleControl(db.id, 'stop')} className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200" title="Stop">
+                          <button onClick={() => handleControl(db.id, 'stop')} className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]" title="Stop">
                             <Square className="w-4 h-4" />
                           </button>
                           <button onClick={() => handleControl(db.id, 'restart')} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300" title="Restart">
@@ -184,7 +184,7 @@ export default function Databases() {
                           <Play className="w-4 h-4" />
                         </button>
                       )}
-                      <button onClick={() => handleDelete(db.id, db.name)} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300" title="Delete">
+                      <button onClick={() => handleDelete(db.id, db.name)} className="text-[hsl(var(--destructive))] hover:text-red-700" title="Delete">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -228,16 +228,16 @@ function CreateDatabaseModal({ onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-lg p-8 max-w-lg w-full">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Create Database</h2>
+      <div className="bg-[hsl(var(--card))] rounded-lg p-8 max-w-lg w-full">
+        <h2 className="text-2xl font-bold text-[hsl(var(--foreground))] mb-6">Create Database</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Database Name</label>
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Database Name</label>
             <input type="text" required pattern="[a-z0-9-]+" placeholder="my-database" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="input" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Lowercase letters, numbers, and hyphens only</p>
+            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Lowercase letters, numbers, and hyphens only</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Environment</label>
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Environment</label>
             <select value={formData.environment} onChange={(e) => setFormData({...formData, environment: e.target.value})} className="input">
               <option value="production">Production</option>
               <option value="staging">Staging</option>
@@ -267,46 +267,46 @@ function ConnectionModal({ database, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-lg p-8 max-w-2xl w-full">
+      <div className="bg-[hsl(var(--card))] rounded-lg p-8 max-w-2xl w-full">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Connection Information</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">✕</button>
+          <h2 className="text-2xl font-bold text-[hsl(var(--foreground))]">Connection Information</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-[hsl(var(--foreground))]">✕</button>
         </div>
         
         <div className="space-y-4">
-          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Host</label>
-            <code className="text-sm text-gray-900 dark:text-white">localhost</code>
+          <div className="bg-[hsl(var(--muted))] p-4 rounded-lg">
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Host</label>
+            <code className="text-sm text-[hsl(var(--foreground))]">localhost</code>
           </div>
           
-          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Port</label>
-            <code className="text-sm text-gray-900 dark:text-white">{database.port}</code>
+          <div className="bg-[hsl(var(--muted))] p-4 rounded-lg">
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Port</label>
+            <code className="text-sm text-[hsl(var(--foreground))]">{database.port}</code>
           </div>
           
-          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Database</label>
-            <code className="text-sm text-gray-900 dark:text-white">{database.name}</code>
+          <div className="bg-[hsl(var(--muted))] p-4 rounded-lg">
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Database</label>
+            <code className="text-sm text-[hsl(var(--foreground))]">{database.name}</code>
           </div>
           
-          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Username</label>
-            <code className="text-sm text-gray-900 dark:text-white">{database.username}</code>
+          <div className="bg-[hsl(var(--muted))] p-4 rounded-lg">
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Username</label>
+            <code className="text-sm text-[hsl(var(--foreground))]">{database.username}</code>
           </div>
           
-          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
-            <code className="text-sm text-gray-900 dark:text-white">{database.password}</code>
+          <div className="bg-[hsl(var(--muted))] p-4 rounded-lg">
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Password</label>
+            <code className="text-sm text-[hsl(var(--foreground))]">{database.password}</code>
           </div>
           
-          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+          <div className="bg-[hsl(var(--muted))] p-4 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Connection String</label>
+              <label className="block text-sm font-medium text-[hsl(var(--foreground))]">Connection String</label>
               <button onClick={copyToClipboard} className="text-xs btn">
                 {copied ? '✓ Copied!' : 'Copy'}
               </button>
             </div>
-            <code className="text-xs text-gray-900 dark:text-white break-all">{connectionString}</code>
+            <code className="text-xs text-[hsl(var(--foreground))] break-all">{connectionString}</code>
           </div>
         </div>
         

@@ -11,7 +11,7 @@ export default function Deployments() {
   const [showLogsModal, setShowLogsModal] = useState(false);
   const [selectedDeployment, setSelectedDeployment] = useState(null);
   const [logs, setLogs] = useState('');
-  const socket = useSocket();
+  const { socket } = useSocket();
 
   useEffect(() => {
     loadData();

@@ -105,8 +105,8 @@ export default function Containers() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Containers</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Monitor and manage Docker containers</p>
+          <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Containers</h1>
+          <p className="text-[hsl(var(--muted-foreground))] mt-2">Monitor and manage Docker containers</p>
         </div>
         <button onClick={loadContainers} className="btn flex items-center gap-2">
           <Loader className="w-4 h-4" />
@@ -116,24 +116,24 @@ export default function Containers() {
 
       <div className="card overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <thead className="bg-[hsl(var(--muted))] border-b border-[hsl(var(--border))]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Container</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">CPU</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Memory</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Disk Size</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Controls</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Logs</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Container</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">CPU</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Memory</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Disk Size</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Controls</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Logs</th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className="bg-[hsl(var(--card))] divide-y divide-[hsl(var(--border))]">
             {containers.length === 0 ? (
               <tr>
                 <td colSpan="6" className="px-6 py-12">
                   <div className="text-center">
                     <Container className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No active containers</h3>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    <h3 className="mt-2 text-sm font-medium text-[hsl(var(--foreground))]">No active containers</h3>
+                    <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
                       Deploy a project to see containers here
                     </p>
                   </div>
@@ -141,33 +141,33 @@ export default function Containers() {
               </tr>
             ) : (
               containers.map((container) => (
-                <tr key={container.containerName} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <tr key={container.containerName} className="hover:bg-[hsl(var(--accent))]">
                   <td className="px-6 py-4">
                     <div>
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">{container.project_name}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="text-sm font-medium text-[hsl(var(--foreground))]">{container.project_name}</div>
+                      <div className="text-xs text-[hsl(var(--muted-foreground))]">
                         <code>{container.containerName}</code>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <Cpu className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                      <Cpu className="w-4 h-4 text-[hsl(var(--primary))]" />
+                      <span className="text-sm font-semibold text-[hsl(var(--foreground))]">
                         {container.stats.cpu || 'N/A'}
                       </span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <HardDrive className="w-4 h-4 text-green-600 dark:text-green-400" />
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                      <HardDrive className="w-4 h-4 text-[hsl(var(--success))]" />
+                      <span className="text-sm font-semibold text-[hsl(var(--foreground))]">
                         {container.stats.memory || 'N/A'}
                       </span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <span className="text-sm font-semibold text-[hsl(var(--foreground))]">
                       {container.stats.diskSize || 'N/A'}
                     </span>
                   </td>
@@ -175,7 +175,7 @@ export default function Containers() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleStop(container.containerName)}
-                        className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                        className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
                         title="Stop"
                       >
                         <Square className="w-4 h-4" />
@@ -231,16 +231,16 @@ export default function Containers() {
 function LogsModal({ container, logs, onClose, onRefresh }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-lg p-8 max-w-4xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-[hsl(var(--card))] rounded-lg p-8 max-w-4xl w-full max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-2xl font-bold text-[hsl(var(--foreground))]">
             Container Logs: {container.containerName}
           </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <button onClick={onClose} className="text-gray-500 hover:text-[hsl(var(--foreground))]">
             ✕
           </button>
         </div>
-        <pre className="flex-1 bg-gray-900 text-gray-100 p-4 rounded-lg overflow-auto font-mono text-sm mb-4">
+        <pre className="flex-1 bg-[hsl(220,20%,5%)] text-gray-100 p-4 rounded-lg overflow-auto font-mono text-sm mb-4">
           {logs}
         </pre>
         <div className="flex gap-3 justify-end">

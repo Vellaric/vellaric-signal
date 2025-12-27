@@ -33,15 +33,15 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 dark:from-gray-900 dark:to-gray-800 px-4">
       <div className="w-full max-w-md">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+        <div className="bg-[hsl(var(--card))] rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-4">
               <Lock className="w-8 h-8 text-primary-600 dark:text-primary-400" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            <h1 className="text-3xl font-bold text-[hsl(var(--foreground))] mb-2">
               Vellaric Signal
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-[hsl(var(--muted-foreground))]">
               Sign in to your account
             </p>
           </div>
@@ -94,7 +94,7 @@ export default function Login() {
           </form>
         </div>
 
-        <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-8">
+        <p className="text-center text-sm text-[hsl(var(--muted-foreground))] mt-8">
           Automated deployment management for your applications
         </p>
       </div>
