@@ -472,6 +472,9 @@
                 <button class="theme-toggle" onclick="toggleTheme()">
                     <span id="theme-icon"><img src="/moon.png" style="width: 20px; height: 20px;"></span>
                 </button>
+                <button class="theme-toggle" onclick="showChangePasswordModal()" title="Change Password">
+                    <span>🔒</span>
+                </button>
                 <button class="theme-toggle" onclick="logout()" title="Logout">
                     <span><img src="/logout-bracket.png" style="width: 20px; height: 20px;"></span>
                 </button>
@@ -654,6 +657,90 @@
                 window.location.href = '/login.html';
             } catch (err) {
                 alert('Logout failed: ' + err.message);
+            }
+        }
+
+        function showChangePasswordModal() {
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+            modal.innerHTML = `
+                <div style="background: var(--bg-secondary); padding: 32px; border-radius: 12px; max-width: 450px; width: 90%;">
+                    <h2 style="margin-bottom: 24px;">🔒 Change Password</h2>
+                    <form id="change-password-form" onsubmit="submitChangePassword(event)">
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Current Password</label>
+                            <input type="password" id="current-password" required autocomplete="current-password" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">New Password</label>
+                            <input type="password" id="new-password" required minlength="6" autocomplete="new-password" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                            <small style="color: var(--text-tertiary); font-size: 12px;">Minimum 6 characters</small>
+                        </div>
+                        <div style="margin-bottom: 24px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Confirm New Password</label>
+                            <input type="password" id="confirm-password" required minlength="6" autocomplete="new-password" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                        </div>
+                        <div id="password-error" style="color: var(--status-failed); margin-bottom: 16px; display: none; font-size: 14px;"></div>
+                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                            <button type="button" class="btn" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Change Password</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        }
+
+        async function submitChangePassword(event) {
+            event.preventDefault();
+            
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const errorDiv = document.getElementById('password-error');
+            
+            // Validate passwords match
+            if (newPassword !== confirmPassword) {
+                errorDiv.textContent = 'New passwords do not match';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/change-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    errorDiv.textContent = data.error || 'Failed to change password';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                
+                // Show success message
+                const modal = event.target.closest('div[style*=fixed]');
+                modal.innerHTML = `
+                    <div style="background: var(--bg-secondary); padding: 32px; border-radius: 12px; max-width: 450px; width: 90%; text-align: center;">
+                        <h2 style="margin-bottom: 16px;">⚠️ Manual Update Required</h2>
+                        <p style="margin-bottom: 24px; color: var(--text-secondary);">To complete the password change:</p>
+                        <ol style="text-align: left; margin-bottom: 24px; padding-left: 24px; color: var(--text-secondary);">
+                            <li style="margin-bottom: 8px;">Update <code style="background: var(--bg-primary); padding: 2px 6px; border-radius: 4px;">ADMIN_PASSWORD</code> in your <code style="background: var(--bg-primary); padding: 2px 6px; border-radius: 4px;">.env</code> file with: <code style="background: var(--bg-primary); padding: 2px 6px; border-radius: 4px;">${newPassword}</code></li>
+                            <li style="margin-bottom: 8px;">Restart Signal server: <code style="background: var(--bg-primary); padding: 2px 6px; border-radius: 4px;">systemctl restart vellaric-signal</code></li>
+                        </ol>
+                        <button class="btn btn-primary" onclick="this.closest('div[style*=fixed]').remove()">Got it</button>
+                    </div>
+                `;
+            } catch (err) {
+                errorDiv.textContent = 'Network error: ' + err.message;
+                errorDiv.style.display = 'block';
             }
         }
         

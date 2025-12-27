@@ -12,7 +12,7 @@ const { listDeployments, removeDeployment, cleanupDockerImages } = require('./se
 const { getDeploymentLogs } = require('./services/deploymentLogs');
 const backupService = require('./services/backupService');
 const databaseManager = require('./services/databaseManager');
-const { sessionMiddleware, requireAuth, handleLogin, handleLogout, checkAuth } = require('./middleware/auth');
+const { sessionMiddleware, requireAuth, handleLogin, handleLogout, checkAuth, handleChangePassword } = require('./middleware/auth');
 const logger = require('./utils/logger');
 
 const app = express();
@@ -43,6 +43,7 @@ app.get('/login.html', (req, res) => {
 app.post('/api/login', handleLogin);
 app.post('/api/logout', handleLogout);
 app.get('/api/auth/check', checkAuth);
+app.post('/api/auth/change-password', requireAuth, handleChangePassword);
 
 // Webhook route (no auth for GitLab webhooks)
 app.use('/webhook', webhookRouter);

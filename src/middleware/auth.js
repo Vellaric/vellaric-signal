@@ -67,10 +67,42 @@ function checkAuth(req, res) {
   res.json({ authenticated: false });
 }
 
+// Change password handler
+async function handleChangePassword(req, res) {
+  if (!req.session || !req.session.authenticated) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const { currentPassword, newPassword } = req.body;
+  
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Current password and new password required' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters' });
+  }
+
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin';
+  
+  // Verify current password
+  if (currentPassword !== adminPassword) {
+    return res.status(401).json({ error: 'Current password is incorrect' });
+  }
+
+  // In production, you should update this in a database or config file
+  // For now, we'll just update the environment variable (requires restart)
+  return res.status(501).json({ 
+    error: 'Password change requires updating ADMIN_PASSWORD in .env file and restarting the server',
+    message: 'Please update ADMIN_PASSWORD in your .env file with the new password and restart Signal'
+  });
+}
+
 module.exports = {
   sessionMiddleware,
   requireAuth,
   handleLogin,
   handleLogout,
-  checkAuth
+  checkAuth,
+  handleChangePassword
 };
