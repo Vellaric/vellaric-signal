@@ -511,5 +511,6 @@ module.exports = {
   getProjectByName,
   updateProject,
   deleteProject,
+  getAllProjects,
   db,
 };

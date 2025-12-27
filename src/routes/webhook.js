@@ -34,15 +34,34 @@ router.post('/gitlab', async (req, res) => {
     const branch = ref ? ref.replace('refs/heads/', '') : null;
 
     const projectName = project?.name || project?.path || repository?.name;
+    const repoUrl = repository?.git_http_url || repository?.url || project?.http_url_to_repo;
     
-    // Check if project exists in database
-    const dbProject = await getProjectByName(projectName);
+    // Check if project exists in database (try by name first, then by repo URL)
+    let dbProject = await getProjectByName(projectName);
+    
+    // If not found by name, try to find by repository URL
+    if (!dbProject && repoUrl) {
+      const { getAllProjects } = require('../services/database');
+      const allProjects = await getAllProjects();
+      dbProject = allProjects.find(p => {
+        // Normalize URLs for comparison (remove .git, trailing slashes, etc)
+        const normalizeUrl = (url) => url?.replace(/\.git$/, '').replace(/\/$/, '').toLowerCase();
+        return normalizeUrl(p.repo_url) === normalizeUrl(repoUrl);
+      });
+      
+      if (dbProject) {
+        logger.info(`Project matched by repository URL: ${dbProject.name} (webhook name: ${projectName})`);
+      }
+    }
+    
     if (!dbProject) {
-      logger.warn(`Webhook received for unknown project: ${projectName}. Please add this project in the dashboard first.`);
+      logger.warn(`Webhook received for unknown project: "${projectName}" (repo: ${repoUrl}). Please add this project in the dashboard first.`);
       return res.status(404).json({ 
         error: 'Project not found',
-        message: 'Please add this project in the Vellaric-Signal dashboard before deploying',
-        project: projectName
+        message: 'Please add this project in the Vellaric-Signal dashboard before deploying. Make sure the repository URL matches.',
+        receivedProjectName: projectName,
+        receivedRepoUrl: repoUrl,
+        hint: 'Check that the repository URL in your dashboard matches the one from GitLab'
       });
     }
     
