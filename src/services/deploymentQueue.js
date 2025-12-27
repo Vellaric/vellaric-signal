@@ -226,11 +226,29 @@ class DeploymentQueue {
       
       // Check if project has .env file
       const envFilePath = path.join(deployPath, '.env');
-      const hasEnvFile = await fs.access(envFilePath).then(() => true).catch(() => false);
+      let envFileVars = {};
       
-      // Merge env vars: DB variables take precedence over .env file
-      // Also add deployment-specific env vars
+      try {
+        const envFileContent = await fs.readFile(envFilePath, 'utf8');
+        // Parse .env file (simple parser for KEY=VALUE format)
+        envFileVars = envFileContent
+          .split('\n')
+          .filter(line => line.trim() && !line.trim().startsWith('#'))
+          .reduce((acc, line) => {
+            const [key, ...valueParts] = line.split('=');
+            if (key && valueParts.length > 0) {
+              acc[key.trim()] = valueParts.join('=').trim();
+            }
+            return acc;
+          }, {});
+        logger.info(`📄 Loaded ${Object.keys(envFileVars).length} variables from repository .env file`);
+      } catch (err) {
+        logger.info(`No .env file found in repository, using only database variables`);
+      }
+      
+      // Merge env vars: .env file as base, then DB variables (DB takes precedence), then deployment vars
       const containerEnvVars = {
+        ...envFileVars,
         ...envVarsFromDb,
         DEPLOY_BRANCH: branch,
         DEPLOY_COMMIT: commit,
