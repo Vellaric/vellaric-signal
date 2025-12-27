@@ -39,6 +39,9 @@ app.get('/login.html', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/login.html'));
 });
 
+// Serve old HTML dashboard (backward compatibility)
+app.use('/dashboard-old.html', express.static(path.join(__dirname, '../public')));
+
 // Auth endpoints
 app.post('/api/login', handleLogin);
 app.post('/api/logout', handleLogout);
@@ -556,6 +559,19 @@ io.on('connection', (socket) => {
     logger.info(`Client disconnected: ${socket.id}`);
   });
 });
+
+// SPA fallback - serve React index.html for all other routes
+const reactIndexPath = path.join(__dirname, '../public-react/index.html');
+if (fs.existsSync(reactIndexPath)) {
+  app.get('*', (req, res) => {
+    res.sendFile(reactIndexPath);
+  });
+} else {
+  // Fallback to old dashboard
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/dashboard.html'));
+  });
+}
 
 // Start server
 server.listen(PORT, () => {
