@@ -60,13 +60,20 @@ app.use('/api/projects', projectsRouter);
 // Environment variables API (requires auth)
 app.use('/api/env', envRouter);
 
-// Serve static files after auth check
-app.use(express.static(path.join(__dirname, '../public')));
+// Serve React app or fallback to old HTML dashboard
+const fs = require('fs');
+const reactBuildPath = path.join(__dirname, '../public-react');
+const reactIndexPath = path.join(reactBuildPath, 'index.html');
 
-// Root endpoint - serve dashboard directly
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/dashboard.html'));
-});
+if (fs.existsSync(reactIndexPath)) {
+  // Serve static files from React build (assets, etc)
+  app.use(express.static(reactBuildPath));
+  logger.info('📦 Serving React frontend');
+} else {
+  // Fallback to old HTML dashboard
+  app.use(express.static(path.join(__dirname, '../public')));
+  logger.info('📦 Serving legacy HTML dashboard (React build not found)');
+}
 
 // Dashboard endpoint - get recent deployments
 app.get('/api/deployments', async (req, res) => {
@@ -560,8 +567,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// SPA fallback - serve React index.html for all other routes
-const reactIndexPath = path.join(__dirname, '../public-react/index.html');
+// SPA fallback - serve React index.html for all other routes (or old dashboard)
 if (fs.existsSync(reactIndexPath)) {
   app.get('*', (req, res) => {
     res.sendFile(reactIndexPath);
