@@ -4,6 +4,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const webhookRouter = require('./routes/webhook');
+const envRouter = require('./routes/env');
 const { getDeploymentHistory } = require('./services/database');
 const { getQueueStatus } = require('./services/deploymentQueue');
 const { listDeployments, removeDeployment, cleanupDockerImages } = require('./services/cleanup');
@@ -47,6 +48,9 @@ app.use('/webhook', webhookRouter);
 
 // Protected routes - require authentication
 app.use(requireAuth);
+
+// Environment variables API (requires auth)
+app.use('/api/env', envRouter);
 
 // Serve static files after auth check
 app.use(express.static(path.join(__dirname, '../public')));

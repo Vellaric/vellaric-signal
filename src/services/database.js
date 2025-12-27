@@ -77,6 +77,27 @@ db.serialize(() => {
     CREATE INDEX IF NOT EXISTS idx_databases_status 
     ON databases(status)
   `);
+
+  // Create environment_variables table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS environment_variables (
+      id TEXT PRIMARY KEY,
+      project_name TEXT NOT NULL,
+      branch TEXT NOT NULL,
+      key TEXT NOT NULL,
+      value TEXT NOT NULL,
+      is_secret INTEGER DEFAULT 0,
+      description TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(project_name, branch, key)
+    )
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_env_vars_project_branch 
+    ON environment_variables(project_name, branch)
+  `);
 });
 
 /**
@@ -177,10 +198,118 @@ function getDeploymentById(deploymentId) {
   });
 }
 
+/**
+ * Save environment variable for a project
+ */
+function saveEnvironmentVariable(projectName, branch, key, value, isSecret = false, description = '') {
+  return new Promise((resolve, reject) => {
+    const id = `env_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const timestamp = new Date().toISOString();
+    
+    db.run(
+      `INSERT OR REPLACE INTO environment_variables 
+       (id, project_name, branch, key, value, is_secret, description, updated_at) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, projectName, branch, key, value, isSecret ? 1 : 0, description, timestamp],
+      (err) => {
+        if (err) {
+          logger.error('Error saving environment variable:', err);
+          reject(err);
+        } else {
+          resolve({ id, projectName, branch, key, isSecret, description });
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Get environment variables for a project and branch
+ */
+function getEnvironmentVariables(projectName, branch) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT id, project_name, branch, key, value, is_secret, description, created_at, updated_at 
+       FROM environment_variables 
+       WHERE project_name = ? AND branch = ?
+       ORDER BY key ASC`,
+      [projectName, branch],
+      (err, rows) => {
+        if (err) {
+          logger.error('Error fetching environment variables:', err);
+          reject(err);
+        } else {
+          resolve(rows || []);
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Get all environment variables for a project (all branches)
+ */
+function getAllEnvironmentVariables(projectName) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT id, project_name, branch, key, value, is_secret, description, created_at, updated_at 
+       FROM environment_variables 
+       WHERE project_name = ?
+       ORDER BY branch ASC, key ASC`,
+      [projectName],
+      (err, rows) => {
+        if (err) {
+          logger.error('Error fetching all environment variables:', err);
+          reject(err);
+        } else {
+          resolve(rows || []);
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Delete environment variable by ID
+ */
+function deleteEnvironmentVariable(id) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      'DELETE FROM environment_variables WHERE id = ?',
+      [id],
+      (err) => {
+        if (err) {
+          logger.error('Error deleting environment variable:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Get environment variables as key-value object
+ */
+async function getEnvironmentVariablesAsObject(projectName, branch) {
+  const vars = await getEnvironmentVariables(projectName, branch);
+  const envObj = {};
+  vars.forEach(v => {
+    envObj[v.key] = v.value;
+  });
+  return envObj;
+}
+
 module.exports = {
   logDeployment,
   updateDeploymentStatus,
   getDeploymentHistory,
   getDeploymentById,
+  saveEnvironmentVariable,
+  getEnvironmentVariables,
+  getAllEnvironmentVariables,
+  deleteEnvironmentVariable,
+  getEnvironmentVariablesAsObject,
   db,
 };

@@ -440,6 +440,14 @@
                 </div>
                 
                 <div class="nav-section">
+                    <div class="nav-group-title">Configuration</div>
+                    <div class="nav-item" onclick="switchView('environment')" data-view="environment">
+                        <span class="icon">⚙️</span>
+                        <span>Environment</span>
+                    </div>
+                </div>
+                
+                <div class="nav-section">
                     <div class="nav-group-title">Database</div>
                     <div class="nav-item" onclick="switchView('databases')" data-view="databases">
                         <span class="icon"><img src="/hard-drive-internal.png" style="width: 18px; height: 18px;"></span>
@@ -672,6 +680,7 @@
                 'history': 'Deployment History',
                 'dashboard': 'Dashboard',
                 'containers': 'Container Monitoring',
+                'environment': 'Environment Variables',
                 'databases': 'Database Management',
                 'backups': 'Database Backups'
             };
@@ -766,6 +775,9 @@
                     return;
                 case 'containers':
                     renderContainersView();
+                    return;
+                case 'environment':
+                    renderEnvironmentView();
                     return;
                 case 'databases':
                     renderDatabasesView();
@@ -1330,6 +1342,268 @@
             } catch (err) {
                 alert('❌ Error: ' + err.message);
             }
+        }
+        
+        // Environment Variables Management
+        async function renderEnvironmentView() {
+            const thead = document.querySelector('thead tr');
+            thead.innerHTML = `
+                <th>Project</th>
+                <th>Branch</th>
+                <th>Key</th>
+                <th>Value</th>
+                <th>Type</th>
+                <th>Actions</th>
+            `;
+            
+            const tbody = document.getElementById('deployments-table');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">⚙️</div>
+                            <p>Loading environment variables...</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            // Add controls for creating environment variables
+            const headerActions = document.querySelector('.header-actions');
+            if (!document.getElementById('env-controls')) {
+                const controls = document.createElement('div');
+                controls.id = 'env-controls';
+                controls.innerHTML = `
+                    <button class="btn btn-primary" onclick="showAddEnvModal()">
+                        + Add Variable
+                    </button>
+                `;
+                headerActions.insertBefore(controls, headerActions.firstChild);
+            }
+            
+            try {
+                // Get list of unique projects from active deployments and history
+                const projects = new Set();
+                allData.active.forEach(d => projects.add(d.project_name));
+                allData.history.forEach(d => projects.add(d.project_name));
+                
+                if (projects.size === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">📦</div>
+                                    <p>No projects found. Deploy an app first to configure environment variables.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                // Fetch environment variables for all projects
+                const envVarsMap = {};
+                for (const project of projects) {
+                    try {
+                        const res = await fetch(`${API_BASE}/api/env/${encodeURIComponent(project)}`);
+                        const data = await res.json();
+                        if (data.success) {
+                            envVarsMap[project] = data.data;
+                        }
+                    } catch (err) {
+                        console.error(`Error loading env vars for ${project}:`, err);
+                    }
+                }
+                
+                // Flatten all env vars
+                const allEnvVars = [];
+                for (const [project, vars] of Object.entries(envVarsMap)) {
+                    allEnvVars.push(...vars);
+                }
+                
+                if (allEnvVars.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">⚙️</div>
+                                    <p>No environment variables configured yet.</p>
+                                    <button class="btn btn-primary" onclick="showAddEnvModal()" style="margin-top: 12px;">+ Add Your First Variable</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                // Render environment variables
+                tbody.innerHTML = allEnvVars.map(env => {
+                    const valueDisplay = env.is_secret ? '••••••••' : env.value;
+                    const typeDisplay = env.is_secret ? 
+                        '<span class="status-badge" style="background: var(--accent-red);">🔒 Secret</span>' : 
+                        '<span class="status-badge" style="background: var(--accent-blue);">📝 Public</span>';
+                    
+                    return `
+                        <tr>
+                            <td><strong>${env.project_name}</strong></td>
+                            <td><code>${env.branch}</code></td>
+                            <td><code style="color: var(--accent-blue);">${env.key}</code></td>
+                            <td>
+                                <code style="font-size: 12px;">${valueDisplay}</code>
+                                ${env.description ? `<div style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px;">${env.description}</div>` : ''}
+                            </td>
+                            <td>${typeDisplay}</td>
+                            <td>
+                                <button class="btn-icon" onclick="editEnvVar('${env.id}')" title="Edit">✏️</button>
+                                <button class="btn-icon" onclick="deleteEnvVar('${env.id}', '${env.project_name}', '${env.key}')" title="Delete">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('Error loading environment variables:', err);
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">❌</div>
+                                <p>Error loading environment variables</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        function showAddEnvModal() {
+            // Get unique projects
+            const projects = new Set();
+            allData.active.forEach(d => projects.add(d.project_name));
+            allData.history.forEach(d => projects.add(d.project_name));
+            
+            const projectOptions = Array.from(projects).map(p => 
+                `<option value="${p}">${p}</option>`
+            ).join('');
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+            modal.innerHTML = `
+                <div style="background: var(--bg-secondary); padding: 32px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                    <h2 style="margin-bottom: 24px;">Add Environment Variable</h2>
+                    <form id="env-form" onsubmit="submitEnvVar(event)">
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Project *</label>
+                            <select id="env-project" required style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                                <option value="">Select project</option>
+                                ${projectOptions}
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Branch *</label>
+                            <select id="env-branch" required style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                                <option value="">Select branch</option>
+                                <option value="production">production</option>
+                                <option value="master">master</option>
+                                <option value="dev">dev</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Key * <span style="color: var(--text-tertiary); font-weight: 400; font-size: 12px;">(e.g., NODE_ENV, DATABASE_URL)</span></label>
+                            <input type="text" id="env-key" required pattern="[A-Z_][A-Z0-9_]*" placeholder="NODE_ENV" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Value *</label>
+                            <textarea id="env-value" required rows="3" placeholder="production" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-family: monospace; resize: vertical;"></textarea>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Description <span style="color: var(--text-tertiary); font-weight: 400; font-size: 12px;">(optional)</span></label>
+                            <input type="text" id="env-description" placeholder="Environment mode for the application" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);">
+                        </div>
+                        <div style="margin-bottom: 24px;">
+                            <label style="display: flex; align-items: center; cursor: pointer;">
+                                <input type="checkbox" id="env-secret" style="margin-right: 8px;">
+                                <span>🔒 Mark as secret (value will be masked)</span>
+                            </label>
+                        </div>
+                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                            <button type="button" class="btn" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Add Variable</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Click outside to close
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        }
+        
+        async function submitEnvVar(event) {
+            event.preventDefault();
+            
+            const project = document.getElementById('env-project').value;
+            const branch = document.getElementById('env-branch').value;
+            const key = document.getElementById('env-key').value.toUpperCase();
+            const value = document.getElementById('env-value').value;
+            const description = document.getElementById('env-description').value;
+            const isSecret = document.getElementById('env-secret').checked;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/env`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        projectName: project,
+                        branch,
+                        key,
+                        value,
+                        description,
+                        isSecret
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    alert('✅ Environment variable saved successfully!');
+                    document.querySelector('div[style*="fixed"]').remove();
+                    renderEnvironmentView();
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Failed to save environment variable'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+        
+        async function deleteEnvVar(id, project, key) {
+            if (!confirm(`Are you sure you want to delete ${key} from ${project}?`)) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/env/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    alert('✅ Environment variable deleted successfully!');
+                    renderEnvironmentView();
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Failed to delete environment variable'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+        
+        async function editEnvVar(id) {
+            // For now, just show an alert - you can implement full edit functionality
+            alert('Edit functionality coming soon! For now, you can delete and recreate the variable.');
         }
         
         // Database management functions

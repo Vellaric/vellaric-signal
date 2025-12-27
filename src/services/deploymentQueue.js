@@ -2,8 +2,9 @@ const { exec } = require('child_process');
 const { promisify } = require('util');
 const path = require('path');
 const fs = require('fs').promises;
+const os = require('os');
 const logger = require('../utils/logger');
-const { updateDeploymentStatus } = require('./database');
+const { updateDeploymentStatus, getEnvironmentVariablesAsObject } = require('./database');
 const { generateNginxConfig, reloadNginx } = require('../utils/nginx');
 const { ensureSSLCertificate } = require('../utils/ssl');
 const { setupDeploymentDns } = require('../utils/cloudflare');
@@ -209,20 +210,45 @@ class DeploymentQueue {
       // Find available port (starting from 3000)
       const port = await this.findAvailablePort(3000 + Math.floor(Math.random() * 1000));
       
+      // Get environment variables from database
+      const envVarsFromDb = await getEnvironmentVariablesAsObject(projectName, branch);
+      
       // Check if project has .env file
       const envFilePath = path.join(deployPath, '.env');
       const hasEnvFile = await fs.access(envFilePath).then(() => true).catch(() => false);
-      const envFileArg = hasEnvFile ? `--env-file "${envFilePath}"` : '';
+      
+      // Merge env vars: DB variables take precedence over .env file
+      // Also add deployment-specific env vars
+      const containerEnvVars = {
+        ...envVarsFromDb,
+        DEPLOY_BRANCH: branch,
+        DEPLOY_COMMIT: commit,
+        DEPLOY_DOMAIN: domain,
+      };
+      
+      // Create a temporary .env file with all environment variables
+      const tempEnvPath = path.join(os.tmpdir(), `${containerName}.env`);
+      const envFileContent = Object.entries(containerEnvVars)
+        .map(([key, value]) => `${key}=${value}`)
+        .join('\n');
+      
+      await fs.writeFile(tempEnvPath, envFileContent);
+      logStep(`📝 Created environment file with ${Object.keys(containerEnvVars).length} variables`);
       
       if (hasEnvFile) {
-        logger.info(`Using environment file: ${envFilePath}`);
-      } else {
-        logger.warn(`No .env file found at ${envFilePath} - container may fail if it requires env vars`);
+        logger.info(`Project has .env file, but using database environment variables (${Object.keys(envVarsFromDb).length} vars)`);
       }
       
-      // Start new container
+      // Start new container with environment variables
       logStep(`🚀 Starting container: ${containerName} on port ${port}`);
-      await execAsync(`docker run -d --name ${containerName} --restart unless-stopped -p ${port}:${appPort} ${envFileArg} ${dockerImageName}:${branch}`);
+      await execAsync(`docker run -d --name ${containerName} --restart unless-stopped -p ${port}:${appPort} --env-file "${tempEnvPath}" ${dockerImageName}:${branch}`);
+      
+      // Clean up temporary env file
+      try {
+        await fs.unlink(tempEnvPath);
+      } catch (err) {
+        logger.warn(`Could not delete temporary env file: ${tempEnvPath}`);
+      }
 
       // Wait for container to be healthy
       await this.waitForContainer(containerName, id);
