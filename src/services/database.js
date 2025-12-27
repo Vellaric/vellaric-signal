@@ -5,6 +5,21 @@ const logger = require('../utils/logger');
 const dbPath = path.join(__dirname, '../../deployments.db');
 const db = new sqlite3.Database(dbPath);
 
+// Run migrations after database is initialized
+let migrationsRun = false;
+
+async function runMigrationsIfNeeded() {
+  if (migrationsRun) return;
+  migrationsRun = true;
+  
+  const { runMigrations } = require('./migrations');
+  try {
+    await runMigrations(db);
+  } catch (err) {
+    logger.error('Error running migrations:', err);
+  }
+}
+
 // Initialize database
 db.serialize(() => {
   db.run(`
@@ -126,6 +141,9 @@ db.serialize(() => {
     CREATE INDEX IF NOT EXISTS idx_env_vars_project_branch 
     ON environment_variables(project_id, branch)
   `);
+  
+  // Run migrations after schema is set up
+  runMigrationsIfNeeded();
 });
 
 /**
