@@ -32,11 +32,13 @@ export const projectsAPI = {
 
 // Deployments
 export const deploymentsAPI = {
+  getAll: () => api.get('/api/deployments'),
   getHistory: () => api.get('/api/deployments'),
   getActive: () => api.get('/api/deployments/active'),
   getById: (id) => api.get(`/api/deployments/${id}`),
   getLogs: (id) => api.get(`/api/deployments/${id}/logs`),
   getQueue: () => api.get('/api/queue'),
+  delete: (project, branch) => api.delete(`/api/deployments/${project}/${branch}`),
 };
 
 // Environment Variables
